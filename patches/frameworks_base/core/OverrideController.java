@@ -46,11 +46,11 @@ import java.util.Map;
 public class OverrideController {
 
     private static final String TAG = "OverrideController";
-    private static final String CONFIG_DIR = "/data/system/override";
-    private static final String CONFIG_FILE = CONFIG_DIR + "/config.json";
-    private static final String PROFILES_DIR = CONFIG_DIR + "/profiles";
-    private static final String KEYBOX_DIR = CONFIG_DIR + "/keybox";
-    private static final String PROPS_DB_FILE = CONFIG_DIR + "/props_database.json";
+    private static String CONFIG_DIR = "/data/system/override";
+    private static String CONFIG_FILE = CONFIG_DIR + "/config.json";
+    private static String PROFILES_DIR = CONFIG_DIR + "/profiles";
+    private static String KEYBOX_DIR = CONFIG_DIR + "/keybox";
+    private static String PROPS_DB_FILE = CONFIG_DIR + "/props_database.json";
 
     private static volatile OverrideController sInstance;
     private Context mContext;
@@ -90,6 +90,11 @@ public class OverrideController {
     // Props database
     private Map<String, PropsEntry> mPropsDatabase = new LinkedHashMap<>();
 
+    // Known path where OverrideSettings app stores config
+    // Used by other processes (GMS, system_server) that don't call init()
+    private static final String KNOWN_DATA_DIR = "/data/data/com.android.override.settings/app_override";
+    private boolean mConfigLoaded = false;
+
     private OverrideController() {}
 
     public static OverrideController getInstance() {
@@ -97,6 +102,8 @@ public class OverrideController {
             synchronized (OverrideController.class) {
                 if (sInstance == null) {
                     sInstance = new OverrideController();
+                    // Auto-load config from known path for non-init'd processes (GMS, system_server)
+                    sInstance.tryAutoLoad();
                 }
             }
         }
@@ -104,17 +111,67 @@ public class OverrideController {
     }
 
     /**
+     * Auto-load config when init() hasn't been called.
+     * This happens in GMS process (for attestation hook) and system_server.
+     */
+    private void tryAutoLoad() {
+        if (mConfigLoaded) return;
+
+        File knownConfig = new File(KNOWN_DATA_DIR + "/config.json");
+        if (knownConfig.exists() && knownConfig.canRead()) {
+            CONFIG_DIR = KNOWN_DATA_DIR;
+            CONFIG_FILE = CONFIG_DIR + "/config.json";
+            PROFILES_DIR = CONFIG_DIR + "/profiles";
+            KEYBOX_DIR = CONFIG_DIR + "/keybox";
+            PROPS_DB_FILE = CONFIG_DIR + "/props_database.json";
+            loadConfig();
+            Log.i(TAG, "Auto-loaded config from " + KNOWN_DATA_DIR
+                    + " enabled=" + mEnabled + " keybox=" + mKeyboxEnabled
+                    + " spoof=" + mSpoofAttestation);
+        } else {
+            Log.d(TAG, "No config at " + KNOWN_DATA_DIR + " (exists="
+                    + knownConfig.exists() + " canRead=" + knownConfig.canRead() + ")");
+        }
+    }
+
+    /**
      * Initialize with context (called from BootReceiver or system server).
      */
     public static void init(Context context) {
+        Log.e(TAG, "init() ENTER - context=" + context);
         OverrideController instance = getInstance();
+        Log.e(TAG, "init() getInstance OK");
         instance.mContext = context;
-        instance.ensureDirectories();
+
+        // Use app data dir (SELinux allows this, /data/system/ is blocked)
+        File baseDir = context.getDir("override", Context.MODE_PRIVATE);
+        CONFIG_DIR = baseDir.getAbsolutePath();
+        CONFIG_FILE = CONFIG_DIR + "/config.json";
+        PROFILES_DIR = CONFIG_DIR + "/profiles";
+        KEYBOX_DIR = CONFIG_DIR + "/keybox";
+        PROPS_DB_FILE = CONFIG_DIR + "/props_database.json";
+        Log.e(TAG, "init() CONFIG_DIR=" + CONFIG_DIR);
+
+        try {
+            instance.ensureDirectories();
+            // Make dirs world-accessible so GMS/system_server can read config
+            File appDataDir = baseDir.getParentFile();
+            if (appDataDir != null) {
+                appDataDir.setExecutable(true, false);
+            }
+            baseDir.setExecutable(true, false);
+            baseDir.setReadable(true, false);
+            new File(KEYBOX_DIR).setExecutable(true, false);
+            new File(KEYBOX_DIR).setReadable(true, false);
+            Log.e(TAG, "init() ensureDirectories OK + world-accessible");
+        } catch (Throwable t) {
+            Log.e(TAG, "init() ensureDirectories FAILED", t);
+        }
         instance.loadConfig();
         instance.loadPropsDatabase();
         Log.i(TAG, "OverrideController [A10] initialized"
                 + " enabled=" + instance.mEnabled
-                + " fp=" + (instance.mFingerprint.length() > 20
+                + " fp=" + (instance.mFingerprint != null && instance.mFingerprint.length() > 20
                     ? instance.mFingerprint.substring(0, 20) + "..." : instance.mFingerprint));
     }
 
@@ -145,7 +202,7 @@ public class OverrideController {
 
             JSONObject json = new JSONObject(sb.toString());
 
-            mEnabled = json.optBoolean("enabled", false);
+            mEnabled = json.optBoolean("enabled", true);
             mFingerprint = json.optString("fingerprint", "");
             mModel = json.optString("model", "");
             mManufacturer = json.optString("manufacturer", "");
@@ -156,7 +213,7 @@ public class OverrideController {
             mSdkLevel = json.optInt("sdk_level", 29);
             mKeyboxEnabled = json.optBoolean("keybox_enabled", false);
             mActiveKeyboxSlot = json.optString("active_keybox_slot", "default");
-            mSpoofAttestation = json.optBoolean("spoof_attestation", false);
+            mSpoofAttestation = json.optBoolean("spoof_attestation", true);
             mAntiDetection = json.optBoolean("anti_detection", false);
             mHideApps = json.optBoolean("hide_apps", false);
             mAutoFallback = json.optBoolean("auto_fallback", false);
@@ -190,7 +247,9 @@ public class OverrideController {
                 }
             }
 
-            Log.d(TAG, "Config loaded successfully");
+            mConfigLoaded = true;
+            Log.d(TAG, "Config loaded successfully"
+                    + " keybox=" + mKeyboxEnabled + " spoof=" + mSpoofAttestation);
         } catch (Exception e) {
             Log.e(TAG, "Failed to load config", e);
         }
@@ -251,7 +310,10 @@ public class OverrideController {
             writer.write(json.toString(2));
             writer.close();
 
-            Log.d(TAG, "Config saved");
+            // Make config world-readable so GMS can read it for attestation hook
+            new File(CONFIG_FILE).setReadable(true, false);
+
+            Log.d(TAG, "Config saved (keybox=" + mKeyboxEnabled + ")");
         } catch (Exception e) {
             Log.e(TAG, "Failed to save config", e);
         }
@@ -439,13 +501,18 @@ public class OverrideController {
             fis.close();
             fos.close();
 
-            // Set permissions
+            // Set permissions — world-readable so GMS process can access
             dest.setReadable(true, false);
             dest.setWritable(true, true);
+            dest.getParentFile().setExecutable(true, false);
+            dest.getParentFile().setReadable(true, false);
 
             mActiveKeyboxSlot = slotName;
+            mKeyboxEnabled = true;
+            mSpoofAttestation = true;
+            mEnabled = true;
             saveConfig();
-            Log.i(TAG, "Keybox imported to slot: " + slotName);
+            Log.i(TAG, "Keybox imported and enabled, slot: " + slotName);
             return true;
         } catch (Exception e) {
             Log.e(TAG, "Failed to import keybox", e);
@@ -465,43 +532,28 @@ public class OverrideController {
      * 3. Any XML with private key + certificate data (case-insensitive)
      */
     private boolean validateKeyboxXml(File file) {
-        try (FileInputStream fis = new FileInputStream(file)) {
-            XmlPullParser parser = Xml.newPullParser();
-            parser.setInput(fis, "UTF-8");
-            int eventType = parser.getEventType();
+        try {
+            // Use string matching instead of XML parser to handle HTML comments
+            FileInputStream fis = new FileInputStream(file);
+            byte[] bytes = new byte[(int) file.length()];
+            fis.read(bytes);
+            fis.close();
+            String content = new String(bytes, "UTF-8").toLowerCase();
 
-            boolean hasKeybox = false;
-            boolean hasPrivateKey = false;
-            boolean hasCertificate = false;
-
-            while (eventType != XmlPullParser.END_DOCUMENT) {
-                if (eventType == XmlPullParser.START_TAG) {
-                    String name = parser.getName().toLowerCase();
-                    if ("keybox".equals(name) || "androidattestation".equals(name)) {
-                        hasKeybox = true;
-                    } else if ("privatekey".equals(name) || "key".equals(name)) {
-                        hasPrivateKey = true;
-                    } else if ("certificate".equals(name) || "certificatechain".equals(name)) {
-                        hasCertificate = true;
-                    }
-                } else if (eventType == XmlPullParser.TEXT) {
-                    String text = parser.getText();
-                    if (text != null) {
-                        if (text.contains("PRIVATE KEY")) hasPrivateKey = true;
-                        if (text.contains("CERTIFICATE")) hasCertificate = true;
-                    }
-                }
-                eventType = parser.next();
-            }
+            boolean hasKeybox = content.contains("<keybox") || content.contains("<androidattestation");
+            boolean hasPrivateKey = content.contains("private key");
+            boolean hasCertificate = content.contains("certificate");
 
             boolean valid = hasKeybox && hasPrivateKey && hasCertificate;
             if (!valid) {
                 Log.w(TAG, "Keybox validation: keybox=" + hasKeybox
                         + " key=" + hasPrivateKey + " cert=" + hasCertificate);
+            } else {
+                Log.d(TAG, "Keybox validation passed");
             }
             return valid;
         } catch (Exception e) {
-            Log.e(TAG, "Keybox XML parse error: " + e.getMessage());
+            Log.e(TAG, "Keybox validation error: " + e.getMessage());
             return false;
         }
     }

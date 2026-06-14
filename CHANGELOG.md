@@ -19,3 +19,6 @@
 | 13 | c947f75 | Remove Anti-Detection, fix dark theme, fix keybox validation, new icon |
 | 14 | 73146bc | Add keystore attestation integration for Device Integrity PASS |
 | 15 | 6e77e0c | Fix ROM integration: SEPolicy, KeyboxManager fields, ExportResult API, clearFingerprint |
+| 16 | 7dfd111 | Fix init not called: add init() in Activity + mkdirs fallback |
+| 17 | a4aaa36 | Update app icon from user-provided cover art |
+| 18 | 1a78b83 | Fix cross-process persistence: auto-load config, world-readable, key parsing |
