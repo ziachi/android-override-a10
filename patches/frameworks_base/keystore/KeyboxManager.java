@@ -43,6 +43,9 @@ public class KeyboxManager {
     private PrivateKey mPrivateKey;
     private List<X509Certificate> mCertificateChain = new ArrayList<>();
     private String mKeyAlgorithm = "";
+    private PrivateKey mSecondaryKey;
+    private List<X509Certificate> mSecondaryCertChain = new ArrayList<>();
+    private String mSecondaryAlgorithm = "";
     private boolean mLoaded = false;
     private long mLoadedTimestamp = 0;
 

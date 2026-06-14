@@ -283,6 +283,17 @@ public class OverrideController {
     public String getSecurityPatch() { return mSecurityPatch; }
     public void setSecurityPatch(String patch) { mSecurityPatch = patch; saveConfig(); }
 
+    public void clearFingerprint() {
+        mFingerprint = "";
+        mModel = "";
+        mManufacturer = "";
+        mProduct = "";
+        mDevice = "";
+        mBrand = "";
+        mSecurityPatch = "";
+        saveConfig();
+    }
+
     public int getSdkLevel() { return mSdkLevel; }
     public void setSdkLevel(int sdk) { mSdkLevel = sdk; saveConfig(); }
 

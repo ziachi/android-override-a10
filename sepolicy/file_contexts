@@ -1,2 +1,4 @@
 # File contexts for Android Override (Android 10)
-/data/system/override(/.*)?    u:object_r:override_config_file:s0
+#
+# Config at /data/system/override/ uses default system_data_file label.
+# No custom file_contexts entry needed.

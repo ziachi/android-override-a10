@@ -7,7 +7,6 @@ android_app {
     platform_apis: true,
     certificate: "platform",
     privileged: true,
-    system_ext_specific: true,
 
     static_libs: [
         "androidx.appcompat_appcompat",

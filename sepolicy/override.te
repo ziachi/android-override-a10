@@ -1,31 +1,9 @@
 # SELinux policy for Android Override framework (Android 10)
 #
-# Differences from Android 13+ version:
-# - Older SELinux policy format
-# - No system_ext partition (uses system or product)
-# - Keymaster HAL types (not KeyMint)
+# Override config lives at /data/system/override/ — this path
+# inherits system_data_file label by default. system_server and
+# system_app already have full access to system_data_file.
+# No custom SELinux type needed.
 
-# Define override config file type
-type override_config_file, file_type, data_file_type;
-
-# Allow system_server to manage override config
-allow system_server override_config_file:dir { create read write open search add_name remove_name };
-allow system_server override_config_file:file { create read write open getattr setattr unlink rename };
-
-# Allow system_app (Settings) to read/write override config
-allow system_app override_config_file:dir { read write open search add_name remove_name };
-allow system_app override_config_file:file { create read write open getattr setattr unlink };
-
-# Allow platform_app to read override config
-allow platform_app override_config_file:dir { read open search };
-allow platform_app override_config_file:file { read open getattr };
-
-# Allow override to interact with keymaster (Android 10)
-allow system_server keymaster_device:chr_file { read write ioctl };
-
-# Allow reading system properties
-allow system_server default_prop:property_service set;
-
-# Suppress noisy denials
-dontaudit untrusted_app override_config_file:dir search;
-dontaudit untrusted_app override_config_file:file read;
+# Suppress noisy denials from untrusted apps trying to probe
+dontaudit untrusted_app system_data_file:dir search;
