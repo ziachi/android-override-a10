@@ -9,6 +9,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 
 import com.android.override.OverrideController;
@@ -16,12 +17,20 @@ import com.android.override.settings.fragments.MainFragment;
 
 public class OverrideSettingsActivity extends Activity {
 
+    private static final String TAG = "OVERRIDE_DEBUG";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Ensure OverrideController is initialized (creates dirs, loads config)
-        OverrideController.init(this);
+        Log.e(TAG, "=== OverrideSettingsActivity.onCreate() CALLED ===");
+
+        try {
+            OverrideController.init(this);
+            Log.e(TAG, "=== OverrideController.init() SUCCEEDED ===");
+        } catch (Throwable t) {
+            Log.e(TAG, "=== OverrideController.init() FAILED ===", t);
+        }
 
         setContentView(R.layout.activity_main);
 
