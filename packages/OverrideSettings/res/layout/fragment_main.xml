@@ -82,17 +82,7 @@
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:text="Import and manage attestation keybox XML" style="@style/PrefSummary" />
         </LinearLayout>
-        <LinearLayout android:id="@+id/card_per_app"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="20dp" android:paddingEnd="20dp"
-            android:paddingTop="14dp" android:paddingBottom="14dp"
-            android:background="@drawable/bg_pref_item">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Per-app configuration" style="@style/PrefTitle" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Set different device identity per app" style="@style/PrefSummary" />
-        </LinearLayout>
+
 
         <View android:layout_width="match_parent" android:layout_height="1dp"
             android:background="#2A2A2A" android:layout_marginTop="8dp" android:layout_marginBottom="8dp" />
@@ -125,24 +115,6 @@
                 android:text="Hide root, apps, and modification traces" style="@style/PrefSummary" />
         </LinearLayout>
 
-        <View android:layout_width="match_parent" android:layout_height="1dp"
-            android:background="#2A2A2A" android:layout_marginTop="8dp" android:layout_marginBottom="8dp" />
 
-        <!-- Misc -->
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Miscellaneous" style="@style/SectionChip"
-            android:layout_marginStart="20dp" android:layout_marginTop="8dp" android:layout_marginBottom="12dp" />
-
-        <LinearLayout android:id="@+id/card_profiles"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="20dp" android:paddingEnd="20dp"
-            android:paddingTop="14dp" android:paddingBottom="14dp"
-            android:background="@drawable/bg_pref_item">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Profiles" style="@style/PrefTitle" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Save and load override configurations" style="@style/PrefSummary" />
-        </LinearLayout>
     </LinearLayout>
 </ScrollView>

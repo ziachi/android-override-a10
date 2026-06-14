@@ -7,8 +7,6 @@
 
     <string name="fingerprint_desc">Override Build.* fields for SafetyNet</string>
     <string name="keybox_desc_a10">Import keybox XML for Keymaster attestation</string>
-    <string name="per_app_desc">Different identity per app</string>
-    <string name="profiles_desc">Save and load configurations</string>
     <string name="integrity_desc_a10">Predict basicIntegrity + ctsProfileMatch</string>
     <string name="anti_detection_desc">Hide root, apps, and modification traces</string>
 
