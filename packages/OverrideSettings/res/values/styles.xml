@@ -1,6 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="OverrideTheme" parent="@android:style/Theme.DeviceDefault.DayNight">
-        <item name="android:windowActionBar">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:colorAccent">#5FCFB4</item>
+        <item name="android:statusBarColor">#1A1A1A</item>
+        <item name="android:navigationBarColor">#1A1A1A</item>
+        <item name="android:windowBackground">#1A1A1A</item>
+    </style>
+    <style name="SectionChip">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">#5FCFB4</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:background">@drawable/bg_chip</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+    </style>
+    <style name="PrefTitle">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">#EEEEEE</item>
+    </style>
+    <style name="PrefSummary">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">#888888</item>
+        <item name="android:layout_marginTop">2dp</item>
+    </style>
+    <style name="SectionHeader">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+    <style name="FlatButton" parent="@android:style/Widget.DeviceDefault.Button.Borderless">
+        <item name="android:textColor">#5FCFB4</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+    <style name="FieldLabel">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textColor">#5FCFB4</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:layout_marginBottom">2dp</item>
     </style>
 </resources>

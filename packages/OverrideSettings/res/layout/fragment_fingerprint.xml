@@ -2,91 +2,141 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
-
+    android:background="#1A1A1A">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingTop="24dp"
+        android:paddingBottom="32dp">
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Fingerprint Spoofing" android:textSize="22sp" android:textStyle="bold"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Database dropdown -->
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Quick Select (Android 10 devices)" android:textSize="14sp"
+            android:text="Fingerprint" style="@style/SectionHeader"
+            android:paddingStart="20dp" android:paddingEnd="20dp"
             android:layout_marginBottom="4dp" />
-        <Spinner android:id="@+id/spinner_database"
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Override Build.* fields for device identity spoofing"
+            android:textSize="13sp" android:textColor="#888"
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Import -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Import" style="@style/SectionChip"
+            android:layout_marginStart="20dp" android:layout_marginBottom="12dp" />
+
+        <LinearLayout android:id="@+id/btn_import_json"
             android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp" />
+            android:orientation="vertical"
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:paddingTop="14dp" android:paddingBottom="14dp"
+            android:background="@drawable/bg_pref_item">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Select build JSON file" style="@style/PrefTitle" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Import device fingerprint from JSON file" style="@style/PrefSummary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:paddingTop="14dp" android:paddingBottom="14dp"
+            android:background="@drawable/bg_pref_item">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Quick select from database" style="@style/PrefTitle" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Choose a preset device fingerprint" style="@style/PrefSummary"
+                android:layout_marginBottom="8dp" />
+            <Spinner android:id="@+id/spinner_database"
+                android:layout_width="match_parent" android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="#2A2A2A" android:layout_marginTop="8dp" android:layout_marginBottom="8dp" />
 
         <!-- Fields -->
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Build Fingerprint" android:textSize="14sp" />
-        <EditText android:id="@+id/edit_fingerprint"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="brand/product/device:10/buildId/number:user/release-keys"
-            android:inputType="text" android:textSize="13sp" android:fontFamily="monospace"
-            android:layout_marginBottom="12dp" />
+            android:text="Build Properties" style="@style/SectionChip"
+            android:layout_marginStart="20dp" android:layout_marginBottom="12dp" />
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Model" android:textSize="14sp" />
-        <EditText android:id="@+id/edit_model"
+        <LinearLayout
             android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="Pixel 4 XL" android:inputType="text"
-            android:layout_marginBottom="12dp" />
+            android:orientation="vertical"
+            android:paddingStart="20dp" android:paddingEnd="20dp">
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Manufacturer" android:textSize="14sp" />
-        <EditText android:id="@+id/edit_manufacturer"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="Google" android:inputType="text"
-            android:layout_marginBottom="12dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="FINGERPRINT" style="@style/FieldLabel" />
+            <EditText android:id="@+id/edit_fingerprint"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="brand/product/device:ver/buildId/inc:type/tags"
+                android:inputType="text" android:textSize="14sp" android:textColor="#DDD"
+                android:textColorHint="#555" android:fontFamily="monospace"
+                android:background="@drawable/bg_field" android:layout_marginBottom="12dp" />
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Product" android:textSize="14sp" />
-        <EditText android:id="@+id/edit_product"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="coral" android:inputType="text"
-            android:layout_marginBottom="12dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="MODEL" style="@style/FieldLabel" />
+            <EditText android:id="@+id/edit_model"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="SM-S931B" android:inputType="text"
+                android:textSize="14sp" android:textColor="#DDD" android:textColorHint="#555"
+                android:background="@drawable/bg_field" android:layout_marginBottom="12dp" />
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Device" android:textSize="14sp" />
-        <EditText android:id="@+id/edit_device"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="coral" android:inputType="text"
-            android:layout_marginBottom="12dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="MANUFACTURER" style="@style/FieldLabel" />
+            <EditText android:id="@+id/edit_manufacturer"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="Samsung" android:inputType="text"
+                android:textSize="14sp" android:textColor="#DDD" android:textColorHint="#555"
+                android:background="@drawable/bg_field" android:layout_marginBottom="12dp" />
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Brand" android:textSize="14sp" />
-        <EditText android:id="@+id/edit_brand"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="google" android:inputType="text"
-            android:layout_marginBottom="12dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="PRODUCT" style="@style/FieldLabel" />
+            <EditText android:id="@+id/edit_product"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="dm3qxxx" android:inputType="text"
+                android:textSize="14sp" android:textColor="#DDD" android:textColorHint="#555"
+                android:background="@drawable/bg_field" android:layout_marginBottom="12dp" />
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Security Patch" android:textSize="14sp" />
-        <EditText android:id="@+id/edit_security_patch"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="2020-08-05" android:inputType="text"
-            android:layout_marginBottom="24dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="DEVICE" style="@style/FieldLabel" />
+            <EditText android:id="@+id/edit_device"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="dm3q" android:inputType="text"
+                android:textSize="14sp" android:textColor="#DDD" android:textColorHint="#555"
+                android:background="@drawable/bg_field" android:layout_marginBottom="12dp" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="BRAND" style="@style/FieldLabel" />
+            <EditText android:id="@+id/edit_brand"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="samsung" android:inputType="text"
+                android:textSize="14sp" android:textColor="#DDD" android:textColorHint="#555"
+                android:background="@drawable/bg_field" android:layout_marginBottom="12dp" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="SECURITY_PATCH" style="@style/FieldLabel" />
+            <EditText android:id="@+id/edit_security_patch"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="2025-01-01" android:inputType="text"
+                android:textSize="14sp" android:textColor="#DDD" android:textColorHint="#555"
+                android:background="@drawable/bg_field" android:layout_marginBottom="20dp" />
+        </LinearLayout>
 
         <!-- Buttons -->
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="20dp" android:paddingEnd="20dp">
             <Button android:id="@+id/btn_save"
                 android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:text="Save"
+                android:textColor="#1A1A1A" android:backgroundTint="#5FCFB4"
                 android:layout_marginEnd="8dp" />
-
             <Button android:id="@+id/btn_clear"
                 android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:text="Clear"
-                style="?android:attr/borderlessButtonStyle" />
+                style="@style/FlatButton" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

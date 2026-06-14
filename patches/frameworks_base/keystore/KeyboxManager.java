@@ -21,44 +21,36 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Manages keybox loading for Keymaster HAL attestation.
  * Android 10 (API 29) version.
  *
- * Key differences from Android 13+ (KeyMint) version:
- * - Uses Keymaster 4.x HAL interface (not KeyMint 1.0+)
- * - Keybox format may differ slightly (RSA vs EC)
- * - Certificate chain handling for older format
- * - No attestation ID provisioning (A10 uses legacy method)
- *
- * Loads user-provided keybox XML files containing:
- * - Private key (PEM-encoded RSA or EC)
- * - Certificate chain (PEM-encoded X.509)
- *
- * Supports multiple named slots with auto-fallback.
+ * Supports:
+ * - Multiple Key elements (ECDSA + RSA) — uses first key found
+ * - HTML comments embedded in PEM data (stripped automatically)
+ * - Standard AndroidAttestation keybox XML format
  */
 public class KeyboxManager {
 
     private static final String TAG = "KeyboxManager";
+    private static final Pattern HTML_COMMENT = Pattern.compile("<!--.*?-->");
 
     private static volatile KeyboxManager sInstance;
 
-    // Loaded keybox data
     private PrivateKey mPrivateKey;
     private List<X509Certificate> mCertificateChain = new ArrayList<>();
-    private String mKeyAlgorithm = ""; // RSA or EC
+    private String mKeyAlgorithm = "";
     private boolean mLoaded = false;
     private long mLoadedTimestamp = 0;
 
-    // Health monitoring
     private boolean mRevoked = false;
     private int mFailureCount = 0;
     private static final int MAX_FAILURES = 3;
     private long mLastHealthCheck = 0;
-    private static final long HEALTH_CHECK_INTERVAL = 3600000; // 1 hour
+    private static final long HEALTH_CHECK_INTERVAL = 3600000;
 
     private KeyboxManager() {}
 
@@ -73,9 +65,6 @@ public class KeyboxManager {
         return sInstance;
     }
 
-    /**
-     * Load keybox from current active slot.
-     */
     public synchronized boolean load() {
         OverrideController controller = OverrideController.getInstance();
         if (!controller.isKeyboxEnabled()) {
@@ -87,9 +76,6 @@ public class KeyboxManager {
         return loadFromFile(keyboxPath);
     }
 
-    /**
-     * Reload keybox (used after slot change / fallback).
-     */
     public synchronized void reload() {
         mLoaded = false;
         mPrivateKey = null;
@@ -100,9 +86,6 @@ public class KeyboxManager {
         load();
     }
 
-    /**
-     * Load keybox from a specific file.
-     */
     private boolean loadFromFile(String path) {
         File file = new File(path);
         if (!file.exists()) {
@@ -116,18 +99,20 @@ public class KeyboxManager {
 
             String privateKeyPem = null;
             List<String> certPems = new ArrayList<>();
-            String currentTag = "";
             StringBuilder textBuilder = new StringBuilder();
+
+            boolean firstKeyParsed = false;
+            boolean insideFirstKey = false;
 
             int eventType = parser.getEventType();
             while (eventType != XmlPullParser.END_DOCUMENT) {
                 switch (eventType) {
                     case XmlPullParser.START_TAG:
-                        currentTag = parser.getName();
                         textBuilder.setLength(0);
+                        String startTag = parser.getName();
 
-                        // Check algorithm attribute
-                        if ("Keybox".equals(currentTag)) {
+                        if ("Key".equals(startTag) && !firstKeyParsed) {
+                            insideFirstKey = true;
                             String algo = parser.getAttributeValue(null, "algorithm");
                             if (algo != null) {
                                 mKeyAlgorithm = algo.toUpperCase();
@@ -136,17 +121,28 @@ public class KeyboxManager {
                         break;
 
                     case XmlPullParser.TEXT:
-                        textBuilder.append(parser.getText());
+                        if (insideFirstKey || !firstKeyParsed) {
+                            textBuilder.append(parser.getText());
+                        }
                         break;
 
                     case XmlPullParser.END_TAG:
+                        String endTag = parser.getName();
                         String text = textBuilder.toString().trim();
-                        if ("PrivateKey".equals(parser.getName()) && !text.isEmpty()) {
-                            privateKeyPem = text;
-                        } else if ("Certificate".equals(parser.getName()) && !text.isEmpty()) {
-                            certPems.add(text);
+
+                        if ("Key".equals(endTag)) {
+                            if (insideFirstKey) {
+                                firstKeyParsed = true;
+                                insideFirstKey = false;
+                            }
+                        } else if (insideFirstKey) {
+                            if ("PrivateKey".equals(endTag) && !text.isEmpty()) {
+                                privateKeyPem = stripHtmlComments(text);
+                            } else if ("Certificate".equals(endTag) && !text.isEmpty()) {
+                                certPems.add(stripHtmlComments(text));
+                            }
                         }
-                        currentTag = "";
+                        textBuilder.setLength(0);
                         break;
                 }
                 eventType = parser.next();
@@ -161,9 +157,13 @@ public class KeyboxManager {
             mCertificateChain.clear();
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
             for (String certPem : certPems) {
-                byte[] certBytes = decodePem(certPem, "CERTIFICATE");
+                String cleaned = certPem.trim();
+                if (!cleaned.startsWith("-----BEGIN")) {
+                    cleaned = "-----BEGIN CERTIFICATE-----\n" + cleaned
+                            + "\n-----END CERTIFICATE-----";
+                }
                 X509Certificate cert = (X509Certificate) certFactory.generateCertificate(
-                        new ByteArrayInputStream(certBytes));
+                        new ByteArrayInputStream(cleaned.getBytes("UTF-8")));
                 mCertificateChain.add(cert);
             }
 
@@ -192,52 +192,52 @@ public class KeyboxManager {
     }
 
     /**
-     * Parse PEM-encoded private key (RSA or EC).
+     * Strip HTML comments from PEM data.
+     * Keybox files from some sources embed comments like
+     * &lt;!--https://t.me/example--&gt; inside PEM blocks.
      */
+    private String stripHtmlComments(String text) {
+        return HTML_COMMENT.matcher(text).replaceAll("");
+    }
+
     private PrivateKey parsePrivateKey(String pem) throws Exception {
         byte[] keyBytes;
         String algorithm;
 
-        if (pem.contains("RSA PRIVATE KEY") || pem.contains("PRIVATE KEY")) {
-            // Try RSA first (most common for Keymaster)
-            if (pem.contains("EC PRIVATE KEY")) {
-                keyBytes = decodePem(pem, "EC PRIVATE KEY");
-                algorithm = "EC";
-            } else if (pem.contains("RSA PRIVATE KEY")) {
-                keyBytes = decodePem(pem, "RSA PRIVATE KEY");
-                algorithm = "RSA";
-            } else {
-                keyBytes = decodePem(pem, "PRIVATE KEY");
-                // PKCS#8 format — algorithm determined by key
-                algorithm = "RSA"; // default, will be corrected by KeyFactory
-            }
+        if (pem.contains("EC PRIVATE KEY")) {
+            keyBytes = decodePem(pem, "EC PRIVATE KEY");
+            algorithm = "EC";
+        } else if (pem.contains("RSA PRIVATE KEY")) {
+            keyBytes = decodePem(pem, "RSA PRIVATE KEY");
+            algorithm = "RSA";
+        } else if (pem.contains("PRIVATE KEY")) {
+            keyBytes = decodePem(pem, "PRIVATE KEY");
+            algorithm = "RSA";
         } else {
-            // Raw base64, assume RSA
             keyBytes = decodeBase64(pem);
             algorithm = "RSA";
         }
 
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
 
-        // Try RSA first, then EC
+        // Try specified algorithm first, then fallback
         try {
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-            mKeyAlgorithm = "RSA";
+            KeyFactory kf = KeyFactory.getInstance(algorithm);
+            mKeyAlgorithm = algorithm;
             return kf.generatePrivate(spec);
         } catch (Exception e) {
+            String fallback = "EC".equals(algorithm) ? "RSA" : "EC";
             try {
-                KeyFactory kf = KeyFactory.getInstance("EC");
-                mKeyAlgorithm = "EC";
+                KeyFactory kf = KeyFactory.getInstance(fallback);
+                mKeyAlgorithm = fallback;
                 return kf.generatePrivate(spec);
             } catch (Exception e2) {
-                throw new Exception("Failed to parse private key as RSA or EC", e2);
+                throw new Exception("Failed to parse key as " + algorithm
+                        + " or " + fallback, e2);
             }
         }
     }
 
-    /**
-     * Decode PEM-encoded data.
-     */
     private byte[] decodePem(String pem, String type) {
         String header = "-----BEGIN " + type + "-----";
         String footer = "-----END " + type + "-----";
@@ -254,28 +254,21 @@ public class KeyboxManager {
         return decodeBase64(base64);
     }
 
-    /**
-     * Decode base64 string.
-     */
     private byte[] decodeBase64(String base64) {
         String cleaned = base64.replaceAll("\\s+", "");
-        // Use android.util.Base64 for Android 10 compatibility
         return android.util.Base64.decode(cleaned, android.util.Base64.DEFAULT);
     }
 
     // ========== Getters ==========
-
     public boolean isLoaded() { return mLoaded; }
     public PrivateKey getPrivateKey() { return mPrivateKey; }
-    public List<X509Certificate> getCertificateChain() { return new ArrayList<>(mCertificateChain); }
+    public List<X509Certificate> getCertificateChain() {
+        return new ArrayList<>(mCertificateChain);
+    }
     public String getKeyAlgorithm() { return mKeyAlgorithm; }
     public long getLoadedTimestamp() { return mLoadedTimestamp; }
 
     // ========== Health Monitoring ==========
-
-    /**
-     * Check keybox health — detect revocation.
-     */
     public synchronized KeyboxHealth checkHealth() {
         KeyboxHealth health = new KeyboxHealth();
 
@@ -285,7 +278,6 @@ public class KeyboxManager {
             return health;
         }
 
-        // Check certificate validity
         try {
             for (X509Certificate cert : mCertificateChain) {
                 cert.checkValidity();
@@ -296,13 +288,11 @@ public class KeyboxManager {
             health.message = "Certificate expired: " + e.getMessage();
         }
 
-        // Check failure count
         if (mFailureCount >= MAX_FAILURES) {
             health.status = KeyboxHealth.STATUS_LIKELY_REVOKED;
             health.message = "Multiple attestation failures — likely revoked";
             mRevoked = true;
 
-            // Auto-fallback if enabled
             OverrideController controller = OverrideController.getInstance();
             if (controller.isAutoFallbackEnabled()) {
                 controller.tryFallback();
@@ -324,21 +314,14 @@ public class KeyboxManager {
         return health;
     }
 
-    /**
-     * Report attestation failure (called by AttestationHooks).
-     */
     public void reportFailure() {
         mFailureCount++;
         Log.w(TAG, "Attestation failure reported, count=" + mFailureCount);
-
         if (mFailureCount >= MAX_FAILURES) {
-            checkHealth(); // Triggers auto-fallback
+            checkHealth();
         }
     }
 
-    /**
-     * Report attestation success (resets failure count).
-     */
     public void reportSuccess() {
         mFailureCount = 0;
         mRevoked = false;
@@ -346,9 +329,6 @@ public class KeyboxManager {
 
     public boolean isRevoked() { return mRevoked; }
 
-    /**
-     * Keybox health status.
-     */
     public static class KeyboxHealth {
         public static final int STATUS_OK = 0;
         public static final int STATUS_NOT_LOADED = 1;

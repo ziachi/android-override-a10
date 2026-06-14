@@ -2,160 +2,147 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
-
+    android:background="#1A1A1A">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingTop="24dp"
+        android:paddingBottom="32dp">
 
-        <!-- Header -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/app_name"
+            android:text="Override"
+            style="@style/SectionHeader"
             android:textSize="28sp"
-            android:textStyle="bold"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
             android:layout_marginBottom="4dp" />
-
         <TextView
+            android:id="@+id/text_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/app_subtitle_a10"
-            android:textSize="14sp"
-            android:textColor="#888888"
-            android:layout_marginBottom="16dp" />
+            android:textSize="13sp"
+            android:textColor="#888"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:layout_marginBottom="20dp" />
 
         <!-- Master Switch -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="16dp"
-            android:background="@drawable/ic_override"
             android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/master_switch"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <Switch
-                android:id="@+id/switch_master"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:paddingTop="14dp" android:paddingBottom="14dp"
+            android:background="@drawable/bg_pref_item">
+            <LinearLayout
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Override enabled" style="@style/PrefTitle" />
+                <TextView android:id="@+id/text_fingerprint_preview"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    style="@style/PrefSummary" android:fontFamily="monospace"
+                    android:textSize="12sp" android:visibility="gone" />
+            </LinearLayout>
+            <Switch android:id="@+id/switch_master"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" />
         </LinearLayout>
 
-        <!-- Status -->
-        <TextView
-            android:id="@+id/text_status"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="12dp"
-            android:textSize="14sp"
-            android:layout_marginBottom="4dp" />
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="#2A2A2A" android:layout_marginTop="8dp" android:layout_marginBottom="8dp" />
 
-        <TextView
-            android:id="@+id/text_fingerprint_preview"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="12dp"
-            android:textSize="12sp"
-            android:textColor="#888888"
-            android:fontFamily="monospace"
-            android:visibility="gone"
-            android:layout_marginBottom="16dp" />
+        <!-- Spoofing -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Spoofing" style="@style/SectionChip"
+            android:layout_marginStart="20dp" android:layout_marginTop="8dp" android:layout_marginBottom="12dp" />
 
-        <!-- Navigation Cards -->
-        <LinearLayout
-            android:id="@+id/card_fingerprint"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+        <LinearLayout android:id="@+id/card_fingerprint"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:layout_marginBottom="2dp">
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:paddingTop="14dp" android:paddingBottom="14dp"
+            android:background="@drawable/bg_pref_item">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="🔑  Fingerprint Spoofing" android:textSize="16sp" android:textStyle="bold" />
+                android:text="Fingerprint spoofing" style="@style/PrefTitle" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="@string/fingerprint_desc" android:textSize="13sp" android:textColor="#888" />
+                android:text="Override Build.* fields for device identity" style="@style/PrefSummary" />
         </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/card_keybox"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+        <LinearLayout android:id="@+id/card_keybox"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:layout_marginBottom="2dp">
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:paddingTop="14dp" android:paddingBottom="14dp"
+            android:background="@drawable/bg_pref_item">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="📦  Keybox Manager" android:textSize="16sp" android:textStyle="bold" />
+                android:text="Keybox manager" style="@style/PrefTitle" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="@string/keybox_desc_a10" android:textSize="13sp" android:textColor="#888" />
+                android:text="Import and manage attestation keybox XML" style="@style/PrefSummary" />
         </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/card_per_app"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+        <LinearLayout android:id="@+id/card_per_app"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:layout_marginBottom="2dp">
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:paddingTop="14dp" android:paddingBottom="14dp"
+            android:background="@drawable/bg_pref_item">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="📱  Per-App Profiles" android:textSize="16sp" android:textStyle="bold" />
+                android:text="Per-app configuration" style="@style/PrefTitle" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="@string/per_app_desc" android:textSize="13sp" android:textColor="#888" />
+                android:text="Set different device identity per app" style="@style/PrefSummary" />
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/card_profiles"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="#2A2A2A" android:layout_marginTop="8dp" android:layout_marginBottom="8dp" />
+
+        <!-- Integrity -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Integrity" style="@style/SectionChip"
+            android:layout_marginStart="20dp" android:layout_marginTop="8dp" android:layout_marginBottom="12dp" />
+
+        <LinearLayout android:id="@+id/card_integrity"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:layout_marginBottom="2dp">
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:paddingTop="14dp" android:paddingBottom="14dp"
+            android:background="@drawable/bg_pref_item">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="💾  Profiles" android:textSize="16sp" android:textStyle="bold" />
+                android:text="Play Integrity check" style="@style/PrefTitle" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="@string/profiles_desc" android:textSize="13sp" android:textColor="#888" />
+                android:text="Predict basicIntegrity and ctsProfileMatch results" style="@style/PrefSummary" />
         </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/card_integrity"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+        <LinearLayout android:id="@+id/card_anti_detection"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:layout_marginBottom="2dp">
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:paddingTop="14dp" android:paddingBottom="14dp"
+            android:background="@drawable/bg_pref_item">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="✅  SafetyNet Checker" android:textSize="16sp" android:textStyle="bold" />
+                android:text="Anti-detection" style="@style/PrefTitle" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="@string/integrity_desc_a10" android:textSize="13sp" android:textColor="#888" />
+                android:text="Hide root, apps, and modification traces" style="@style/PrefSummary" />
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/card_anti_detection"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="#2A2A2A" android:layout_marginTop="8dp" android:layout_marginBottom="8dp" />
+
+        <!-- Misc -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Miscellaneous" style="@style/SectionChip"
+            android:layout_marginStart="20dp" android:layout_marginTop="8dp" android:layout_marginBottom="12dp" />
+
+        <LinearLayout android:id="@+id/card_profiles"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:layout_marginBottom="2dp">
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:paddingTop="14dp" android:paddingBottom="14dp"
+            android:background="@drawable/bg_pref_item">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="👻  Anti-Detection" android:textSize="16sp" android:textStyle="bold" />
+                android:text="Profiles" style="@style/PrefTitle" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="@string/anti_detection_desc" android:textSize="13sp" android:textColor="#888" />
+                android:text="Save and load override configurations" style="@style/PrefSummary" />
         </LinearLayout>
-
     </LinearLayout>
 </ScrollView>

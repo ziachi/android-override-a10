@@ -17,7 +17,7 @@
 
     <application
         android:label="Override"
-        android:icon="@drawable/ic_override"
+        android:icon="@mipmap/ic_override"
         android:theme="@style/OverrideTheme"
         android:supportsRtl="true">
 

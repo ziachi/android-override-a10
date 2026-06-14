@@ -43,7 +43,6 @@ public class KeyboxFragment extends Fragment {
 
         OverrideController controller = OverrideController.getInstance();
 
-        // Enable switch
         mKeyboxSwitch = view.findViewById(R.id.switch_keybox);
         mKeyboxSwitch.setChecked(controller.isKeyboxEnabled());
         mKeyboxSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -54,34 +53,26 @@ public class KeyboxFragment extends Fragment {
             updateStatus();
         });
 
-        // Status fields
         mKeyboxStatus = view.findViewById(R.id.text_keybox_status);
         mKeyboxAlgorithm = view.findViewById(R.id.text_keybox_algorithm);
         mKeyboxSlot = view.findViewById(R.id.text_keybox_slot);
         mKeyboxHealth = view.findViewById(R.id.text_keybox_health);
 
-        // Import button — file picker
+        // Import from file picker — use */* to accept all file types
         view.findViewById(R.id.btn_import_keybox).setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("*/*");
             intent.addCategory(Intent.CATEGORY_OPENABLE);
-            startActivityForResult(Intent.createChooser(intent, "Select Keybox XML"), PICK_KEYBOX_FILE);
+            startActivityForResult(
+                    Intent.createChooser(intent, "Select Keybox XML"), PICK_KEYBOX_FILE);
         });
 
-        // Import from path button
-        view.findViewById(R.id.btn_import_path).setOnClickListener(v -> {
-            showImportFromPathDialog();
-        });
-
-        // Health check button
-        view.findViewById(R.id.btn_health_check).setOnClickListener(v -> {
-            checkHealth();
-        });
-
-        // Slot management
-        view.findViewById(R.id.btn_manage_slots).setOnClickListener(v -> {
-            showSlotsDialog();
-        });
+        view.findViewById(R.id.btn_import_path).setOnClickListener(v ->
+                showImportFromPathDialog());
+        view.findViewById(R.id.btn_health_check).setOnClickListener(v ->
+                checkHealth());
+        view.findViewById(R.id.btn_manage_slots).setOnClickListener(v ->
+                showSlotsDialog());
 
         updateStatus();
         return view;
@@ -90,18 +81,14 @@ public class KeyboxFragment extends Fragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == PICK_KEYBOX_FILE && resultCode == getActivity().RESULT_OK && data != null) {
-            Uri uri = data.getData();
-            if (uri != null) {
-                importKeyboxFromUri(uri);
-            }
+        if (requestCode == PICK_KEYBOX_FILE && resultCode == getActivity().RESULT_OK
+                && data != null && data.getData() != null) {
+            importKeyboxFromUri(data.getData());
         }
     }
 
     private void importKeyboxFromUri(Uri uri) {
         try {
-            // Copy to temp file first
             InputStream is = getActivity().getContentResolver().openInputStream(uri);
             File tempFile = new File(getActivity().getCacheDir(), "keybox_import.xml");
             FileOutputStream fos = new FileOutputStream(tempFile);
@@ -111,23 +98,21 @@ public class KeyboxFragment extends Fragment {
             is.close();
             fos.close();
 
-            // Import
             OverrideController controller = OverrideController.getInstance();
             boolean success = controller.importKeybox(tempFile.getAbsolutePath());
 
             if (success) {
                 KeyboxManager.getInstance().reload();
-                Toast.makeText(getActivity(), "✅ Keybox imported!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), "Keybox imported!", Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(getActivity(), "❌ Invalid keybox format", Toast.LENGTH_LONG).show();
+                Toast.makeText(getActivity(), "Invalid keybox format", Toast.LENGTH_LONG).show();
             }
 
-            // Clean up temp file
             tempFile.delete();
-
             updateStatus();
         } catch (Exception e) {
-            Toast.makeText(getActivity(), "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(getActivity(),
+                    "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -146,14 +131,13 @@ public class KeyboxFragment extends Fragment {
                 boolean success = controller.importKeybox(path);
                 if (success) {
                     KeyboxManager.getInstance().reload();
-                    Toast.makeText(getActivity(), "✅ Keybox imported!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity(), "Keybox imported!", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(getActivity(), "❌ Import failed", Toast.LENGTH_LONG).show();
+                    Toast.makeText(getActivity(), "Import failed", Toast.LENGTH_LONG).show();
                 }
                 updateStatus();
             }
         });
-
         builder.setNegativeButton("Cancel", null);
         builder.show();
     }
@@ -168,7 +152,6 @@ public class KeyboxFragment extends Fragment {
         }
 
         String currentSlot = controller.getActiveKeyboxSlot();
-
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Keybox Slots");
 
@@ -190,32 +173,29 @@ public class KeyboxFragment extends Fragment {
                     Toast.LENGTH_SHORT).show();
             updateStatus();
         });
-
         builder.setNegativeButton("Cancel", null);
         builder.show();
     }
 
     private void checkHealth() {
         KeyboxManager keybox = KeyboxManager.getInstance();
-        if (!keybox.isLoaded()) {
-            keybox.load();
-        }
+        if (!keybox.isLoaded()) keybox.load();
 
         KeyboxManager.KeyboxHealth health = keybox.checkHealth();
 
         String statusText;
         switch (health.status) {
             case KeyboxManager.KeyboxHealth.STATUS_OK:
-                statusText = "✅ Healthy";
+                statusText = "Healthy";
                 break;
             case KeyboxManager.KeyboxHealth.STATUS_DEGRADED:
-                statusText = "⚠️ Degraded: " + health.message;
+                statusText = "Degraded: " + health.message;
                 break;
             case KeyboxManager.KeyboxHealth.STATUS_LIKELY_REVOKED:
-                statusText = "❌ Likely Revoked: " + health.message;
+                statusText = "Likely Revoked: " + health.message;
                 break;
             default:
-                statusText = "❓ Not loaded";
+                statusText = "Not loaded";
                 break;
         }
 
@@ -228,17 +208,17 @@ public class KeyboxFragment extends Fragment {
         KeyboxManager keybox = KeyboxManager.getInstance();
 
         if (controller.isKeyboxEnabled() && keybox.isLoaded()) {
-            mKeyboxStatus.setText("✅ Loaded");
+            mKeyboxStatus.setText("Loaded");
             mKeyboxAlgorithm.setText("Algorithm: " + keybox.getKeyAlgorithm());
             mKeyboxAlgorithm.setVisibility(View.VISIBLE);
             mKeyboxSlot.setText("Slot: " + controller.getActiveKeyboxSlot());
             mKeyboxSlot.setVisibility(View.VISIBLE);
         } else if (controller.isKeyboxEnabled()) {
-            mKeyboxStatus.setText("⚠️ Enabled but not loaded");
+            mKeyboxStatus.setText("Enabled but not loaded");
             mKeyboxAlgorithm.setVisibility(View.GONE);
             mKeyboxSlot.setVisibility(View.GONE);
         } else {
-            mKeyboxStatus.setText("❌ Disabled");
+            mKeyboxStatus.setText("Disabled");
             mKeyboxAlgorithm.setVisibility(View.GONE);
             mKeyboxSlot.setVisibility(View.GONE);
         }

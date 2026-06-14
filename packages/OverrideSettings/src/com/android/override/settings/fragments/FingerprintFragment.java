@@ -6,9 +6,9 @@
 package com.android.override.settings.fragments;
 
 import android.app.Fragment;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,10 +21,17 @@ import android.widget.Toast;
 import com.android.override.OverrideController;
 import com.android.override.settings.R;
 
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Map;
 
 public class FingerprintFragment extends Fragment {
+
+    private static final int PICK_JSON_FILE = 2001;
 
     private EditText mFingerprintEdit;
     private EditText mModelEdit;
@@ -43,7 +50,6 @@ public class FingerprintFragment extends Fragment {
 
         OverrideController controller = OverrideController.getInstance();
 
-        // Initialize fields
         mFingerprintEdit = view.findViewById(R.id.edit_fingerprint);
         mModelEdit = view.findViewById(R.id.edit_model);
         mManufacturerEdit = view.findViewById(R.id.edit_manufacturer);
@@ -53,7 +59,6 @@ public class FingerprintFragment extends Fragment {
         mSecurityPatchEdit = view.findViewById(R.id.edit_security_patch);
         mDatabaseSpinner = view.findViewById(R.id.spinner_database);
 
-        // Load current values
         mFingerprintEdit.setText(controller.getFingerprint());
         mModelEdit.setText(controller.getModel());
         mManufacturerEdit.setText(controller.getManufacturer());
@@ -62,10 +67,16 @@ public class FingerprintFragment extends Fragment {
         mBrandEdit.setText(controller.getBrand());
         mSecurityPatchEdit.setText(controller.getSecurityPatch());
 
-        // Props database dropdown
         setupDatabaseSpinner(controller);
 
-        // Save button
+        view.findViewById(R.id.btn_import_json).setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("*/*");
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            startActivityForResult(
+                    Intent.createChooser(intent, "Select Build JSON"), PICK_JSON_FILE);
+        });
+
         view.findViewById(R.id.btn_save).setOnClickListener(v -> {
             controller.setFingerprint(mFingerprintEdit.getText().toString().trim());
             controller.setModel(mModelEdit.getText().toString().trim());
@@ -74,10 +85,9 @@ public class FingerprintFragment extends Fragment {
             controller.setDevice(mDeviceEdit.getText().toString().trim());
             controller.setBrand(mBrandEdit.getText().toString().trim());
             controller.setSecurityPatch(mSecurityPatchEdit.getText().toString().trim());
-            Toast.makeText(getActivity(), "Saved!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity(), "Saved", Toast.LENGTH_SHORT).show();
         });
 
-        // Clear button
         view.findViewById(R.id.btn_clear).setOnClickListener(v -> {
             mFingerprintEdit.setText("");
             mModelEdit.setText("");
@@ -86,23 +96,67 @@ public class FingerprintFragment extends Fragment {
             mDeviceEdit.setText("");
             mBrandEdit.setText("");
             mSecurityPatchEdit.setText("");
-            controller.setFingerprint("");
-            controller.setModel("");
-            controller.setManufacturer("");
-            controller.setProduct("");
-            controller.setDevice("");
-            controller.setBrand("");
-            controller.setSecurityPatch("");
+            controller.clearFingerprint();
             Toast.makeText(getActivity(), "Cleared", Toast.LENGTH_SHORT).show();
         });
 
         return view;
     }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == PICK_JSON_FILE && resultCode == getActivity().RESULT_OK
+                && data != null && data.getData() != null) {
+            importBuildJson(data.getData());
+        }
+    }
+
+    private void importBuildJson(Uri uri) {
+        try {
+            InputStream is = getActivity().getContentResolver().openInputStream(uri);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) sb.append(line);
+            reader.close();
+            is.close();
+
+            JSONObject json = new JSONObject(sb.toString());
+
+            if (json.has("FINGERPRINT") && !json.optString("FINGERPRINT").isEmpty()) {
+                mFingerprintEdit.setText(json.getString("FINGERPRINT"));
+            } else if (json.has("BRAND") && json.has("PRODUCT") && json.has("DEVICE")) {
+                String fp = json.optString("BRAND", "") + "/"
+                        + json.optString("PRODUCT", "") + "/"
+                        + json.optString("DEVICE", "") + ":"
+                        + json.optString("RELEASE", "10") + "/"
+                        + json.optString("ID", "") + "/"
+                        + json.optString("ID", "") + ":"
+                        + json.optString("TYPE", "user") + "/release-keys";
+                mFingerprintEdit.setText(fp);
+            }
+
+            if (json.has("MODEL")) mModelEdit.setText(json.getString("MODEL"));
+            if (json.has("MANUFACTURER")) mManufacturerEdit.setText(json.getString("MANUFACTURER"));
+            if (json.has("PRODUCT")) mProductEdit.setText(json.getString("PRODUCT"));
+            if (json.has("DEVICE")) mDeviceEdit.setText(json.getString("DEVICE"));
+            if (json.has("BRAND")) mBrandEdit.setText(json.getString("BRAND"));
+            if (json.has("SECURITY_PATCH")) mSecurityPatchEdit.setText(json.getString("SECURITY_PATCH"));
+
+            Toast.makeText(getActivity(),
+                    "Imported: " + json.optString("MODEL", "Unknown"),
+                    Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(getActivity(),
+                    "Import failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void setupDatabaseSpinner(OverrideController controller) {
         Map<String, OverrideController.PropsEntry> db = controller.getPropsDatabase();
         ArrayList<String> labels = new ArrayList<>();
-        labels.add("Select device from database...");
+        labels.add("Select device...");
         labels.addAll(db.keySet());
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
@@ -117,7 +171,6 @@ public class FingerprintFragment extends Fragment {
                     mIgnoreSpinner = false;
                     return;
                 }
-
                 String label = labels.get(position);
                 OverrideController.PropsEntry entry = db.get(label);
                 if (entry != null) {
@@ -128,7 +181,8 @@ public class FingerprintFragment extends Fragment {
                     mDeviceEdit.setText(entry.device);
                     mBrandEdit.setText(entry.brand);
                     mSecurityPatchEdit.setText(entry.securityPatch);
-                    Toast.makeText(getActivity(), "Loaded: " + label, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity(), "Loaded: " + label,
+                            Toast.LENGTH_SHORT).show();
                 }
             }
 
