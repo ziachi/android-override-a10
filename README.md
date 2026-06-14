@@ -56,15 +56,14 @@ A modular framework for managing device identity properties at the system level 
 
 | Feature | Description |
 |---------|-------------|
-| Property Management | Configure `Build.*` fields per-process for ROM development |
-| Certificate Manager | Import and manage attestation certificates (user-provided) |
-| Attestation Config | Configure attestation parameters (security level, boot state) |
-| Per-App Configuration | Different device properties per application for testing |
-| Profiles | Save/load/switch entire device configurations |
-| Health Checker | Built-in diagnostics for configuration validation |
-| Certificate Health | Validate certificate chain integrity |
+| Fingerprint Spoofing | Configure `Build.*` fields for GMS process identity |
+| Keybox Import | Import keybox XML with dual EC + RSA key support |
+| Attestation Hook | Keystore-level hook to replace attestation cert chain |
+| Hardware Attestation | Spoof SecurityLevel, VerifiedBoot, RootOfTrust |
+| Keybox Health | Monitor keybox validity, detect revocation |
+| Certificate Parser | Auto-detect algorithm, strip HTML comments from PEM |
 | Device Database | Built-in device property presets (public build info) |
-| Auto-Rotation | Rotate certificate slots on validation failure |
+| Always-On | No toggles — spoofing is enabled by default |
 | OTA-Safe Config | Persist in `/data/system/override/` — survives updates |
 
 ## Quick Start
@@ -80,8 +79,10 @@ cp -r patches/frameworks_base/keystore/*.java \
 cp -r patches/frameworks_base/services/*.java \
       $ROM/frameworks/base/core/java/com/android/override/services/
 
-# 2. Add hook in ActivityThread.java (handleBindApplication)
-# See patches/frameworks_base/core/ActivityThread.java.patch
+# 2. Add hooks
+# ActivityThread: see patches/frameworks_base/core/ActivityThread.java.patch
+# KeyStore attestation: see patches/frameworks_base/keystore/KeyStore.java.patch
+# Full guide: docs/keystore-integration.md
 
 # 3. Copy Settings app + SEPolicy
 cp -r packages/OverrideSettings/ $ROM/packages/apps/OverrideSettings/

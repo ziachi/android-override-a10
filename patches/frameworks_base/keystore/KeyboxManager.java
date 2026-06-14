@@ -97,12 +97,10 @@ public class KeyboxManager {
             XmlPullParser parser = Xml.newPullParser();
             parser.setInput(fis, "UTF-8");
 
-            String privateKeyPem = null;
-            List<String> certPems = new ArrayList<>();
+            // Parse all <Key> elements — supports dual EC + RSA keybox
+            List<KeyData> keyDataList = new ArrayList<>();
+            KeyData currentKey = null;
             StringBuilder textBuilder = new StringBuilder();
-
-            boolean firstKeyParsed = false;
-            boolean insideFirstKey = false;
 
             int eventType = parser.getEventType();
             while (eventType != XmlPullParser.END_DOCUMENT) {
@@ -111,35 +109,31 @@ public class KeyboxManager {
                         textBuilder.setLength(0);
                         String startTag = parser.getName();
 
-                        if ("Key".equals(startTag) && !firstKeyParsed) {
-                            insideFirstKey = true;
+                        if ("Key".equals(startTag)) {
+                            currentKey = new KeyData();
                             String algo = parser.getAttributeValue(null, "algorithm");
                             if (algo != null) {
-                                mKeyAlgorithm = algo.toUpperCase();
+                                currentKey.algorithm = algo.toUpperCase();
                             }
                         }
                         break;
 
                     case XmlPullParser.TEXT:
-                        if (insideFirstKey || !firstKeyParsed) {
-                            textBuilder.append(parser.getText());
-                        }
+                        textBuilder.append(parser.getText());
                         break;
 
                     case XmlPullParser.END_TAG:
                         String endTag = parser.getName();
                         String text = textBuilder.toString().trim();
 
-                        if ("Key".equals(endTag)) {
-                            if (insideFirstKey) {
-                                firstKeyParsed = true;
-                                insideFirstKey = false;
-                            }
-                        } else if (insideFirstKey) {
+                        if ("Key".equals(endTag) && currentKey != null) {
+                            keyDataList.add(currentKey);
+                            currentKey = null;
+                        } else if (currentKey != null) {
                             if ("PrivateKey".equals(endTag) && !text.isEmpty()) {
-                                privateKeyPem = stripHtmlComments(text);
+                                currentKey.privateKeyPem = stripHtmlComments(text);
                             } else if ("Certificate".equals(endTag) && !text.isEmpty()) {
-                                certPems.add(stripHtmlComments(text));
+                                currentKey.certPems.add(stripHtmlComments(text));
                             }
                         }
                         textBuilder.setLength(0);
@@ -148,36 +142,45 @@ public class KeyboxManager {
                 eventType = parser.next();
             }
 
-            // Parse private key
-            if (privateKeyPem != null) {
-                mPrivateKey = parsePrivateKey(privateKeyPem);
-            }
-
-            // Parse certificate chain
-            mCertificateChain.clear();
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-            for (String certPem : certPems) {
-                String cleaned = certPem.trim();
-                if (!cleaned.startsWith("-----BEGIN")) {
-                    cleaned = "-----BEGIN CERTIFICATE-----\n" + cleaned
-                            + "\n-----END CERTIFICATE-----";
+
+            // Process first key → primary
+            if (!keyDataList.isEmpty()) {
+                KeyData first = keyDataList.get(0);
+                if (first.privateKeyPem != null) {
+                    mPrivateKey = parsePrivateKey(first.privateKeyPem);
+                    mKeyAlgorithm = !first.algorithm.isEmpty() ? first.algorithm
+                            : (mPrivateKey != null ? mPrivateKey.getAlgorithm().toUpperCase() : "");
                 }
-                X509Certificate cert = (X509Certificate) certFactory.generateCertificate(
-                        new ByteArrayInputStream(cleaned.getBytes("UTF-8")));
-                mCertificateChain.add(cert);
+                mCertificateChain.clear();
+                for (String certPem : first.certPems) {
+                    mCertificateChain.add(parseCertificate(certFactory, certPem));
+                }
             }
 
-            // Auto-detect algorithm if not specified
-            if (mKeyAlgorithm.isEmpty() && mPrivateKey != null) {
-                mKeyAlgorithm = mPrivateKey.getAlgorithm().toUpperCase();
+            // Process second key → secondary (if exists)
+            if (keyDataList.size() >= 2) {
+                KeyData second = keyDataList.get(1);
+                if (second.privateKeyPem != null) {
+                    mSecondaryKey = parsePrivateKey(second.privateKeyPem);
+                    mSecondaryAlgorithm = !second.algorithm.isEmpty() ? second.algorithm
+                            : (mSecondaryKey != null ? mSecondaryKey.getAlgorithm().toUpperCase() : "");
+                }
+                mSecondaryCertChain.clear();
+                for (String certPem : second.certPems) {
+                    mSecondaryCertChain.add(parseCertificate(certFactory, certPem));
+                }
             }
 
             mLoaded = mPrivateKey != null && !mCertificateChain.isEmpty();
             mLoadedTimestamp = System.currentTimeMillis();
 
             if (mLoaded) {
-                Log.i(TAG, "Keybox loaded: algo=" + mKeyAlgorithm
-                        + " certs=" + mCertificateChain.size()
+                Log.i(TAG, "Keybox loaded: primary=" + mKeyAlgorithm
+                        + " (" + mCertificateChain.size() + " certs)"
+                        + (mSecondaryKey != null ?
+                                ", secondary=" + mSecondaryAlgorithm
+                                + " (" + mSecondaryCertChain.size() + " certs)" : "")
                         + " slot=" + OverrideController.getInstance().getActiveKeyboxSlot());
             } else {
                 Log.e(TAG, "Keybox incomplete: key=" + (mPrivateKey != null)
@@ -196,7 +199,24 @@ public class KeyboxManager {
      * Keybox files from some sources embed comments like
      * &lt;!--https://t.me/example--&gt; inside PEM blocks.
      */
-    private String stripHtmlComments(String text) {
+    private X509Certificate parseCertificate(CertificateFactory factory, String pem) throws Exception {
+        String cleaned = pem.trim();
+        if (!cleaned.startsWith("-----BEGIN")) {
+            cleaned = "-----BEGIN CERTIFICATE-----\n" + cleaned
+                    + "\n-----END CERTIFICATE-----";
+        }
+        return (X509Certificate) factory.generateCertificate(
+                new ByteArrayInputStream(cleaned.getBytes("UTF-8")));
+    }
+
+    /** Internal holder for parsed key data */
+    private static class KeyData {
+        String algorithm = "";
+        String privateKeyPem;
+        List<String> certPems = new ArrayList<>();
+    }
+
+        private String stripHtmlComments(String text) {
         return HTML_COMMENT.matcher(text).replaceAll("");
     }
 
@@ -267,6 +287,53 @@ public class KeyboxManager {
     }
     public String getKeyAlgorithm() { return mKeyAlgorithm; }
     public long getLoadedTimestamp() { return mLoadedTimestamp; }
+
+    // ========== Dual-Key Support (EC + RSA) ==========
+    /**
+     * Get private key by algorithm type.
+     * Keybox XML may contain both EC and RSA keys.
+     * @param algorithm "EC" or "RSA"
+     * @return matching private key, or primary key if not found
+     */
+    public PrivateKey getPrivateKey(String algorithm) {
+        if (algorithm != null) {
+            if (algorithm.equalsIgnoreCase(mKeyAlgorithm) && mPrivateKey != null) {
+                return mPrivateKey;
+            }
+            if (algorithm.equalsIgnoreCase(mSecondaryAlgorithm) && mSecondaryKey != null) {
+                return mSecondaryKey;
+            }
+        }
+        return mPrivateKey; // fallback to primary
+    }
+
+    /**
+     * Get certificate chain by algorithm type.
+     * @param algorithm "EC" or "RSA"
+     * @return matching cert chain, or primary chain if not found
+     */
+    public List<X509Certificate> getCertificateChain(String algorithm) {
+        if (algorithm != null) {
+            if (algorithm.equalsIgnoreCase(mKeyAlgorithm) && !mCertificateChain.isEmpty()) {
+                return new ArrayList<>(mCertificateChain);
+            }
+            if (algorithm.equalsIgnoreCase(mSecondaryAlgorithm) && !mSecondaryCertChain.isEmpty()) {
+                return new ArrayList<>(mSecondaryCertChain);
+            }
+        }
+        return new ArrayList<>(mCertificateChain); // fallback to primary
+    }
+
+    public boolean hasAlgorithm(String algorithm) {
+        return algorithm.equalsIgnoreCase(mKeyAlgorithm)
+                || algorithm.equalsIgnoreCase(mSecondaryAlgorithm);
+    }
+
+    public PrivateKey getSecondaryKey() { return mSecondaryKey; }
+    public List<X509Certificate> getSecondaryCertChain() {
+        return new ArrayList<>(mSecondaryCertChain);
+    }
+    public String getSecondaryAlgorithm() { return mSecondaryAlgorithm; }
 
     // ========== Health Monitoring ==========
     public synchronized KeyboxHealth checkHealth() {
