@@ -131,3 +131,13 @@ Licensed under the Apache License, Version 2.0
 ```
 
 See [LICENSE](LICENSE) for full text.
+
+## Build Status
+
+### keepQASSA Sisu v2.4_0.s — Build SUCCESS ✅
+- **Device:** Xiaomi Redmi 4X (santoni)
+- **ZIP:** `qassa_Sisu-v2.4_0.s-UNOFFICIAL-santoni-20260614-1254-Vanilla-signed.zip` (753MB)
+- **MD5:** `372396bc63a7ee186acecf615938303d`
+- **Build time:** 19:36
+- **Signed:** releasekey
+- **4 build fixes applied** — see [docs/build-fixes.md](docs/build-fixes.md)

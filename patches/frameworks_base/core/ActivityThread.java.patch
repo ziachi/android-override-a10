@@ -1,0 +1,21 @@
+diff --git a/core/java/android/app/ActivityThread.java b/core/java/android/app/ActivityThread.java
+index 76a60ace..a35a4b71 100644
+--- a/core/java/android/app/ActivityThread.java
++++ b/core/java/android/app/ActivityThread.java
+@@ -34,6 +34,7 @@ import android.annotation.NonNull;
+ import android.annotation.Nullable;
+ import android.annotation.UnsupportedAppUsage;
+ import android.app.assist.AssistContent;
++import com.android.override.PropsHooks;
+ import android.app.assist.AssistStructure;
+ import android.app.backup.BackupAgent;
+ import android.app.servertransaction.ActivityLifecycleItem;
+@@ -6458,6 +6459,8 @@ public final class ActivityThread extends ClientTransactionHandler {
+                     + data.instrumentationName + ": " + e.toString(), e);
+             }
+             try {
++                // Android Override: hook into app startup for property management
++                PropsHooks.onApplicationCreated(app, data.processName);
+                 mInstrumentation.callApplicationOnCreate(app);
+             } catch (Exception e) {
+                 if (!mInstrumentation.onException(app, e)) {
