@@ -29,8 +29,6 @@ public class AntiDetectionFragment extends Fragment {
     private Switch mHideAppsSwitch;
     private Switch mAttestationSwitch;
     private Switch mAutoFallbackSwitch;
-    private TextView mBootloaderStatus;
-    private TextView mVerifiedBootStatus;
     private LinearLayout mHiddenAppsList;
     private TextView mStatusInfo;
 
@@ -68,31 +66,6 @@ public class AntiDetectionFragment extends Fragment {
         mAutoFallbackSwitch.setChecked(controller.isAutoFallbackEnabled());
         mAutoFallbackSwitch.setOnCheckedChangeListener((btn, checked) -> {
             controller.setAutoFallback(checked);
-        });
-
-        // Bootloader state
-        mBootloaderStatus = view.findViewById(R.id.text_bootloader_state);
-        mBootloaderStatus.setText("Bootloader: " + controller.getBootloaderState());
-        view.findViewById(R.id.btn_toggle_bootloader).setOnClickListener(v -> {
-            String current = controller.getBootloaderState();
-            String newState = "locked".equals(current) ? "unlocked" : "locked";
-            controller.setBootloaderState(newState);
-            mBootloaderStatus.setText("Bootloader: " + newState);
-        });
-
-        // Verified boot state
-        mVerifiedBootStatus = view.findViewById(R.id.text_verified_boot_state);
-        mVerifiedBootStatus.setText("Verified Boot: " + controller.getVerifiedBootState());
-        view.findViewById(R.id.btn_toggle_verified_boot).setOnClickListener(v -> {
-            String current = controller.getVerifiedBootState();
-            String newState;
-            switch (current) {
-                case "green": newState = "yellow"; break;
-                case "yellow": newState = "orange"; break;
-                default: newState = "green"; break;
-            }
-            controller.setVerifiedBootState(newState);
-            mVerifiedBootStatus.setText("Verified Boot: " + newState);
         });
 
         // Hidden apps list

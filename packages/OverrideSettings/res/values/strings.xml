@@ -22,8 +22,6 @@
 
     <string name="keymaster_title">Keymaster HAL</string>
     <string name="attestation_spoof">Attestation Spoofing</string>
-    <string name="bootloader_state">Bootloader State</string>
-    <string name="verified_boot">Verified Boot State</string>
 
     <string name="anti_detection_title">Anti-Detection</string>
     <string name="hide_root_apps">Hide Root Apps</string>
