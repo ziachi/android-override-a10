@@ -417,6 +417,10 @@ public class OverrideController {
      */
     public boolean importKeybox(String sourcePath, String slotName) {
         try {
+            // Ensure directories exist (fallback if init() wasn't called)
+            new File(CONFIG_DIR).mkdirs();
+            new File(KEYBOX_DIR).mkdirs();
+
             File source = new File(sourcePath);
             File dest = new File(KEYBOX_DIR + "/" + slotName + ".xml");
 

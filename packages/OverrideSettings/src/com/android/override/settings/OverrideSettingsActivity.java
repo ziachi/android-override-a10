@@ -11,6 +11,7 @@ import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.view.MenuItem;
 
+import com.android.override.OverrideController;
 import com.android.override.settings.fragments.MainFragment;
 
 public class OverrideSettingsActivity extends Activity {
@@ -18,6 +19,10 @@ public class OverrideSettingsActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Ensure OverrideController is initialized (creates dirs, loads config)
+        OverrideController.init(this);
+
         setContentView(R.layout.activity_main);
 
         if (savedInstanceState == null) {
