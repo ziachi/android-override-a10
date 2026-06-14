@@ -23,3 +23,4 @@
 | 17 | a4aaa36 | Update app icon from user-provided cover art |
 | 18 | 1a78b83 | Fix cross-process persistence: auto-load config, world-readable, key parsing |
 | 19 | da76dd9 | Sync OverrideSettingsActivity with Qassa build |
+| 20 | bb546f3 | Sync SEPolicy + file_contexts with Qassa build |
