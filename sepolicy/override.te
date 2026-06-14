@@ -1,4 +1,4 @@
-# SELinux policy for Android Override framework (Android 10)
+# SELinux policy for Android Override framework (Qassa ROM / Android 10)
 #
 # Override config lives at /data/system/override/ — this path
 # inherits system_data_file label by default. system_server and
