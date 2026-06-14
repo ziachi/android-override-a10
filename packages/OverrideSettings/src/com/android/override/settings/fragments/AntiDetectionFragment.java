@@ -27,7 +27,6 @@ public class AntiDetectionFragment extends Fragment {
 
     private Switch mAntiDetectionSwitch;
     private Switch mHideAppsSwitch;
-    private Switch mAttestationSwitch;
     private LinearLayout mHiddenAppsList;
     private TextView mStatusInfo;
 
@@ -51,13 +50,6 @@ public class AntiDetectionFragment extends Fragment {
         mHideAppsSwitch.setChecked(controller.isHideAppsEnabled());
         mHideAppsSwitch.setOnCheckedChangeListener((btn, checked) -> {
             controller.setHideApps(checked);
-        });
-
-        // Attestation spoofing switch
-        mAttestationSwitch = view.findViewById(R.id.switch_attestation);
-        mAttestationSwitch.setChecked(controller.isSpoofAttestationEnabled());
-        mAttestationSwitch.setOnCheckedChangeListener((btn, checked) -> {
-            controller.setSpoofAttestation(checked);
         });
 
         // Hidden apps list
