@@ -84,25 +84,7 @@
         </LinearLayout>
 
 
-        <View android:layout_width="match_parent" android:layout_height="1dp"
-            android:background="#2A2A2A" android:layout_marginTop="8dp" android:layout_marginBottom="8dp" />
 
-        <!-- Integrity -->
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Integrity" style="@style/SectionChip"
-            android:layout_marginStart="20dp" android:layout_marginTop="8dp" android:layout_marginBottom="12dp" />
-
-        <LinearLayout android:id="@+id/card_integrity"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="20dp" android:paddingEnd="20dp"
-            android:paddingTop="14dp" android:paddingBottom="14dp"
-            android:background="@drawable/bg_pref_item">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Play Integrity check" style="@style/PrefTitle" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Predict basicIntegrity and ctsProfileMatch results" style="@style/PrefSummary" />
-        </LinearLayout>
         <LinearLayout android:id="@+id/card_anti_detection"
             android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical"
