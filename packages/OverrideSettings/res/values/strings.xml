@@ -29,8 +29,6 @@
     <string name="filter_mounts">Filter /proc/mounts</string>
     <string name="suppress_logs">Suppress Root Logs</string>
 
-    <string name="auto_fallback_title">Auto-Fallback</string>
-    <string name="auto_fallback_desc">Automatically try next keybox on failure</string>
 
     <string name="database_pixel4xl">Pixel 4 XL (coral)</string>
     <string name="database_pixel4">Pixel 4 (flame)</string>

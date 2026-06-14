@@ -28,7 +28,6 @@ public class AntiDetectionFragment extends Fragment {
     private Switch mAntiDetectionSwitch;
     private Switch mHideAppsSwitch;
     private Switch mAttestationSwitch;
-    private Switch mAutoFallbackSwitch;
     private LinearLayout mHiddenAppsList;
     private TextView mStatusInfo;
 
@@ -59,13 +58,6 @@ public class AntiDetectionFragment extends Fragment {
         mAttestationSwitch.setChecked(controller.isSpoofAttestationEnabled());
         mAttestationSwitch.setOnCheckedChangeListener((btn, checked) -> {
             controller.setSpoofAttestation(checked);
-        });
-
-        // Auto-fallback switch
-        mAutoFallbackSwitch = view.findViewById(R.id.switch_auto_fallback);
-        mAutoFallbackSwitch.setChecked(controller.isAutoFallbackEnabled());
-        mAutoFallbackSwitch.setOnCheckedChangeListener((btn, checked) -> {
-            controller.setAutoFallback(checked);
         });
 
         // Hidden apps list
