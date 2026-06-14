@@ -39,6 +39,8 @@ public class MainFragment extends Fragment {
                 navigateTo(new KeyboxFragment(), "keybox"));
         view.findViewById(R.id.card_anti_detection).setOnClickListener(v ->
                 navigateTo(new AntiDetectionFragment(), "anti_detection"));
+        view.findViewById(R.id.card_about).setOnClickListener(v ->
+                navigateTo(new AboutFragment(), "about"));
 
         updateStatus();
         return view;

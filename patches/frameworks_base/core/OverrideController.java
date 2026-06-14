@@ -241,6 +241,12 @@ public class OverrideController {
             }
             json.put("hidden_apps", hidden);
 
+            // Ensure config directory exists
+            File configDir = new File(CONFIG_DIR);
+            if (!configDir.exists()) {
+                configDir.mkdirs();
+            }
+
             FileWriter writer = new FileWriter(CONFIG_FILE);
             writer.write(json.toString(2));
             writer.close();
