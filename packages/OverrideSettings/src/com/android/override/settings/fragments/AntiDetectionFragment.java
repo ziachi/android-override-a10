@@ -25,7 +25,6 @@ import java.util.Map;
 
 public class AntiDetectionFragment extends Fragment {
 
-    private Switch mAntiDetectionSwitch;
     private Switch mHideAppsSwitch;
     private LinearLayout mHiddenAppsList;
     private TextView mStatusInfo;
@@ -36,14 +35,6 @@ public class AntiDetectionFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_anti_detection, container, false);
 
         OverrideController controller = OverrideController.getInstance();
-
-        // Anti-detection master switch
-        mAntiDetectionSwitch = view.findViewById(R.id.switch_anti_detection);
-        mAntiDetectionSwitch.setChecked(controller.isAntiDetectionEnabled());
-        mAntiDetectionSwitch.setOnCheckedChangeListener((btn, checked) -> {
-            controller.setAntiDetection(checked);
-            updateStatus();
-        });
 
         // Hide apps switch
         mHideAppsSwitch = view.findViewById(R.id.switch_hide_apps);

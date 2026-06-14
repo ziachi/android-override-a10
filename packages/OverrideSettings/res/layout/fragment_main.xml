@@ -29,27 +29,21 @@
             android:paddingEnd="20dp"
             android:layout_marginBottom="20dp" />
 
-        <!-- Master Switch -->
+        <!-- Active Status -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
+            android:orientation="vertical"
             android:paddingStart="20dp" android:paddingEnd="20dp"
             android:paddingTop="14dp" android:paddingBottom="14dp"
             android:background="@drawable/bg_pref_item">
-            <LinearLayout
-                android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Override enabled" style="@style/PrefTitle" />
-                <TextView android:id="@+id/text_fingerprint_preview"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    style="@style/PrefSummary" android:fontFamily="monospace"
-                    android:textSize="12sp" android:visibility="gone" />
-            </LinearLayout>
-            <Switch android:id="@+id/switch_master"
-                android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Override Active" style="@style/PrefTitle"
+                android:textColor="#5FCFB4" />
+            <TextView android:id="@+id/text_fingerprint_preview"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                style="@style/PrefSummary" android:fontFamily="monospace"
+                android:textSize="12sp" android:visibility="gone" />
         </LinearLayout>
 
         <View android:layout_width="match_parent" android:layout_height="1dp"
