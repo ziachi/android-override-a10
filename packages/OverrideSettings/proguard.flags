@@ -1,0 +1,7 @@
+-keep class com.android.override.** { *; }
+-keep class com.android.override.settings.** { *; }
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+-dontwarn com.google.android.material.**
+-dontwarn androidx.**

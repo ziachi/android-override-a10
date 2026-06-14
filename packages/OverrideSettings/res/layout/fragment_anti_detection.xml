@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Anti-Detection" android:textSize="22sp" android:textStyle="bold"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Switches -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="Anti-Detection" android:textSize="16sp" />
+            <Switch android:id="@+id/switch_anti_detection"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="Hide Root Apps" android:textSize="16sp" />
+            <Switch android:id="@+id/switch_hide_apps"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="Spoof Attestation (Keymaster)" android:textSize="16sp" />
+            <Switch android:id="@+id/switch_attestation"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="Auto-Fallback" android:textSize="16sp" />
+            <Switch android:id="@+id/switch_auto_fallback"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <!-- Boot state -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+            <TextView android:id="@+id/text_bootloader_state"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:textSize="14sp" />
+            <Button android:id="@+id/btn_toggle_bootloader"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Toggle" android:textSize="12sp"
+                style="?android:attr/borderlessButtonStyle" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+            <TextView android:id="@+id/text_verified_boot_state"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:textSize="14sp" />
+            <Button android:id="@+id/btn_toggle_verified_boot"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Toggle" android:textSize="12sp"
+                style="?android:attr/borderlessButtonStyle" />
+        </LinearLayout>
+
+        <!-- Hidden apps -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="Custom Hidden Apps" android:textSize="16sp"
+                android:textStyle="bold" />
+            <Button android:id="@+id/btn_add_hidden_app"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="+ Add" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/list_hidden_apps"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Status -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Status" android:textSize="16sp" android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+        <TextView android:id="@+id/text_anti_detection_status"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:fontFamily="monospace" android:textSize="12sp" />
+    </LinearLayout>
+</ScrollView>

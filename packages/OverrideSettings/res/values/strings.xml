@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Override</string>
+    <string name="app_subtitle_a10">Device spoofing framework for Android 10</string>
+
+    <string name="master_switch">Override Enabled</string>
+
+    <string name="fingerprint_desc">Override Build.* fields for SafetyNet</string>
+    <string name="keybox_desc_a10">Import keybox XML for Keymaster attestation</string>
+    <string name="per_app_desc">Different identity per app</string>
+    <string name="profiles_desc">Save and load configurations</string>
+    <string name="integrity_desc_a10">Predict basicIntegrity + ctsProfileMatch</string>
+    <string name="anti_detection_desc">Hide root, apps, and modification traces</string>
+
+    <string name="btn_save">Save</string>
+    <string name="btn_clear">Clear</string>
+    <string name="btn_import">Import</string>
+    <string name="btn_cancel">Cancel</string>
+
+    <string name="enabled">Enabled</string>
+    <string name="disabled">Disabled</string>
+    <string name="active">Active</string>
+    <string name="not_loaded">Not loaded</string>
+
+    <string name="safetynet_title">SafetyNet Attestation</string>
+    <string name="basic_integrity">basicIntegrity</string>
+    <string name="cts_profile_match">ctsProfileMatch</string>
+
+    <string name="keymaster_title">Keymaster HAL</string>
+    <string name="attestation_spoof">Attestation Spoofing</string>
+    <string name="bootloader_state">Bootloader State</string>
+    <string name="verified_boot">Verified Boot State</string>
+
+    <string name="anti_detection_title">Anti-Detection</string>
+    <string name="hide_root_apps">Hide Root Apps</string>
+    <string name="hide_root_paths">Hide Root Paths</string>
+    <string name="filter_mounts">Filter /proc/mounts</string>
+    <string name="suppress_logs">Suppress Root Logs</string>
+
+    <string name="auto_fallback_title">Auto-Fallback</string>
+    <string name="auto_fallback_desc">Automatically try next keybox on failure</string>
+
+    <string name="database_pixel4xl">Pixel 4 XL (coral)</string>
+    <string name="database_pixel4">Pixel 4 (flame)</string>
+    <string name="database_pixel3xl">Pixel 3 XL (crosshatch)</string>
+    <string name="database_s20ultra">Samsung S20 Ultra (z3q)</string>
+    <string name="database_s10plus">Samsung S10+ (beyond2)</string>
+    <string name="database_op8pro">OnePlus 8 Pro</string>
+    <string name="database_mi10">Xiaomi Mi 10 (umi)</string>
+    <string name="database_note10plus">Samsung Note 10+</string>
+</resources>

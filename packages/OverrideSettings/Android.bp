@@ -1,0 +1,25 @@
+android_app {
+    name: "OverrideSettings",
+
+    srcs: ["src/**/*.java"],
+    resource_dirs: ["res"],
+
+    platform_apis: true,
+    certificate: "platform",
+    privileged: true,
+    system_ext_specific: true,
+
+    static_libs: [
+        "androidx.appcompat_appcompat",
+        "androidx.recyclerview_recyclerview",
+        "com.google.android.material_material",
+    ],
+
+    optimize: {
+        proguard_flags_files: ["proguard.flags"],
+    },
+
+    // Android 10 (API 29) minimum
+    min_sdk_version: "29",
+    target_sdk_version: "29",
+}

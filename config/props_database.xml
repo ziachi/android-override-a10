@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Props Database — Known working Android 10 device fingerprints.
+  Used as presets in the Settings UI dropdown.
+  No sensitive data (keybox/keys) included.
+-->
+<props_database>
+    <device name="Pixel 4 XL" codename="coral">
+        <fingerprint>google/coral/coral:10/QQ3A.200805.001/6578210:user/release-keys</fingerprint>
+        <model>Pixel 4 XL</model>
+        <manufacturer>Google</manufacturer>
+        <brand>google</brand>
+        <security_patch>2020-08-05</security_patch>
+    </device>
+
+    <device name="Pixel 4" codename="flame">
+        <fingerprint>google/flame/flame:10/QQ3A.200805.001/6578210:user/release-keys</fingerprint>
+        <model>Pixel 4</model>
+        <manufacturer>Google</manufacturer>
+        <brand>google</brand>
+        <security_patch>2020-08-05</security_patch>
+    </device>
+
+    <device name="Pixel 3 XL" codename="crosshatch">
+        <fingerprint>google/crosshatch/crosshatch:10/QQ3A.200805.001/6578210:user/release-keys</fingerprint>
+        <model>Pixel 3 XL</model>
+        <manufacturer>Google</manufacturer>
+        <brand>google</brand>
+        <security_patch>2020-08-05</security_patch>
+    </device>
+
+    <device name="Samsung Galaxy S20 Ultra" codename="z3q">
+        <fingerprint>samsung/z3q/z3q:10/QP1A.190711.020/G988BXXS9DTL1:user/release-keys</fingerprint>
+        <model>SM-G988B</model>
+        <manufacturer>samsung</manufacturer>
+        <brand>samsung</brand>
+        <security_patch>2020-12-01</security_patch>
+    </device>
+
+    <device name="Samsung Galaxy S10+" codename="beyond2">
+        <fingerprint>samsung/beyond2lte/beyond2:10/QP1A.190711.020/G975FXXS9DTL1:user/release-keys</fingerprint>
+        <model>SM-G975F</model>
+        <manufacturer>samsung</manufacturer>
+        <brand>samsung</brand>
+        <security_patch>2020-12-01</security_patch>
+    </device>
+
+    <device name="OnePlus 8 Pro" codename="instantnoodle">
+        <fingerprint>oneplus/OnePlus8Pro/OnePlus8Pro:10/QKQ1.190716.003/2012012019:user/release-keys</fingerprint>
+        <model>IN2023</model>
+        <manufacturer>OnePlus</manufacturer>
+        <brand>OnePlus</brand>
+        <security_patch>2020-12-05</security_patch>
+    </device>
+
+    <device name="Xiaomi Mi 10" codename="umi">
+        <fingerprint>xiaomi/umi/umi:10/QKQ1.191117.002/V12.0.3.0.QJBMIXM:user/release-keys</fingerprint>
+        <model>Mi 10</model>
+        <manufacturer>Xiaomi</manufacturer>
+        <brand>Xiaomi</brand>
+        <security_patch>2020-09-05</security_patch>
+    </device>
+
+    <device name="Samsung Galaxy Note 10+" codename="d2s">
+        <fingerprint>samsung/d2s/d2s:10/QP1A.190711.020/N975FXXS6DTL1:user/release-keys</fingerprint>
+        <model>SM-N975F</model>
+        <manufacturer>samsung</manufacturer>
+        <brand>samsung</brand>
+        <security_patch>2020-12-01</security_patch>
+    </device>
+</props_database>

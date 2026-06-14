@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Example profile: Google Pixel 4 XL (Android 10)
+-->
+<profile name="Pixel 4 XL">
+    <fingerprint>google/coral/coral:10/QQ3A.200805.001/6578210:user/release-keys</fingerprint>
+    <model>Pixel 4 XL</model>
+    <manufacturer>Google</manufacturer>
+    <product>coral</product>
+    <device>coral</device>
+    <brand>google</brand>
+    <security_patch>2020-08-05</security_patch>
+    <sdk_level>29</sdk_level>
+    <spoof_attestation>true</spoof_attestation>
+    <bootloader_state>locked</bootloader_state>
+    <verified_boot_state>green</verified_boot_state>
+
+    <per_app package="com.whatsapp" enabled="false" />
+    <per_app package="com.bank.app"
+        fingerprint="samsung/z3q/z3q:10/QP1A.190711.020/G988BXXS9DTL1:user/release-keys"
+        model="SM-G988B" manufacturer="samsung" brand="samsung" />
+</profile>

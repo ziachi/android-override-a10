@@ -1,0 +1,2 @@
+# File contexts for Android Override (Android 10)
+/data/system/override(/.*)?    u:object_r:override_config_file:s0

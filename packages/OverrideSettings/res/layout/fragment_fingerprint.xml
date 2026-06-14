@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Fingerprint Spoofing" android:textSize="22sp" android:textStyle="bold"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Database dropdown -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Quick Select (Android 10 devices)" android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
+        <Spinner android:id="@+id/spinner_database"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Fields -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Build Fingerprint" android:textSize="14sp" />
+        <EditText android:id="@+id/edit_fingerprint"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="brand/product/device:10/buildId/number:user/release-keys"
+            android:inputType="text" android:textSize="13sp" android:fontFamily="monospace"
+            android:layout_marginBottom="12dp" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Model" android:textSize="14sp" />
+        <EditText android:id="@+id/edit_model"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="Pixel 4 XL" android:inputType="text"
+            android:layout_marginBottom="12dp" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Manufacturer" android:textSize="14sp" />
+        <EditText android:id="@+id/edit_manufacturer"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="Google" android:inputType="text"
+            android:layout_marginBottom="12dp" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Product" android:textSize="14sp" />
+        <EditText android:id="@+id/edit_product"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="coral" android:inputType="text"
+            android:layout_marginBottom="12dp" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Device" android:textSize="14sp" />
+        <EditText android:id="@+id/edit_device"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="coral" android:inputType="text"
+            android:layout_marginBottom="12dp" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Brand" android:textSize="14sp" />
+        <EditText android:id="@+id/edit_brand"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="google" android:inputType="text"
+            android:layout_marginBottom="12dp" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Security Patch" android:textSize="14sp" />
+        <EditText android:id="@+id/edit_security_patch"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="2020-08-05" android:inputType="text"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button android:id="@+id/btn_save"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="Save"
+                android:layout_marginEnd="8dp" />
+
+            <Button android:id="@+id/btn_clear"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="Clear"
+                style="?android:attr/borderlessButtonStyle" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
