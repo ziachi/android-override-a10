@@ -442,6 +442,13 @@ public class OverrideController {
      * Validate keybox XML has required structure.
      * Keymaster format (Android 10): expects Keybox with PrivateKey and Certificate.
      */
+    /**
+     * Validate keybox XML has required structure.
+     * Accepts multiple formats:
+     * 1. Standard: <AndroidAttestation><Keybox><Key><PrivateKey>+<Certificate>
+     * 2. Simple: <Keybox><PrivateKey>+<Certificate>
+     * 3. Any XML with private key + certificate data (case-insensitive)
+     */
     private boolean validateKeyboxXml(File file) {
         try (FileInputStream fis = new FileInputStream(file)) {
             XmlPullParser parser = Xml.newPullParser();
@@ -454,16 +461,32 @@ public class OverrideController {
 
             while (eventType != XmlPullParser.END_DOCUMENT) {
                 if (eventType == XmlPullParser.START_TAG) {
-                    String name = parser.getName();
-                    if ("Keybox".equals(name)) hasKeybox = true;
-                    else if ("PrivateKey".equals(name)) hasPrivateKey = true;
-                    else if ("Certificate".equals(name)) hasCertificate = true;
+                    String name = parser.getName().toLowerCase();
+                    if ("keybox".equals(name) || "androidattestation".equals(name)) {
+                        hasKeybox = true;
+                    } else if ("privatekey".equals(name) || "key".equals(name)) {
+                        hasPrivateKey = true;
+                    } else if ("certificate".equals(name) || "certificatechain".equals(name)) {
+                        hasCertificate = true;
+                    }
+                } else if (eventType == XmlPullParser.TEXT) {
+                    String text = parser.getText();
+                    if (text != null) {
+                        if (text.contains("PRIVATE KEY")) hasPrivateKey = true;
+                        if (text.contains("CERTIFICATE")) hasCertificate = true;
+                    }
                 }
                 eventType = parser.next();
             }
 
-            return hasKeybox && hasPrivateKey && hasCertificate;
+            boolean valid = hasKeybox && hasPrivateKey && hasCertificate;
+            if (!valid) {
+                Log.w(TAG, "Keybox validation: keybox=" + hasKeybox
+                        + " key=" + hasPrivateKey + " cert=" + hasCertificate);
+            }
+            return valid;
         } catch (Exception e) {
+            Log.e(TAG, "Keybox XML parse error: " + e.getMessage());
             return false;
         }
     }

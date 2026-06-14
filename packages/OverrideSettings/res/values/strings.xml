@@ -1,12 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Override</string>
-    <string name="app_subtitle_a10">Device spoofing framework for Android 10</string>
-
-    <string name="master_switch">Override Enabled</string>
+    <string name="app_subtitle_a10">GMS spoofing framework for Android 10</string>
 
     <string name="keybox_desc_a10">Import keybox XML for Keymaster attestation</string>
-    <string name="anti_detection_desc">Hide root, apps, and modification traces</string>
 
     <string name="btn_save">Save</string>
     <string name="btn_clear">Clear</string>
@@ -18,16 +15,7 @@
     <string name="active">Active</string>
     <string name="not_loaded">Not loaded</string>
 
-    <string name="cts_profile_match">ctsProfileMatch</string>
-
     <string name="keymaster_title">Keymaster HAL</string>
-
-    <string name="anti_detection_title">Anti-Detection</string>
-    <string name="hide_root_apps">Hide Root Apps</string>
-    <string name="hide_root_paths">Hide Root Paths</string>
-    <string name="filter_mounts">Filter /proc/mounts</string>
-    <string name="suppress_logs">Suppress Root Logs</string>
-
 
     <string name="database_pixel4xl">Pixel 4 XL (coral)</string>
     <string name="database_pixel4">Pixel 4 (flame)</string>

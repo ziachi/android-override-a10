@@ -72,7 +72,7 @@
                 android:background="?android:attr/selectableItemBackground"
                 android:layout_marginBottom="4dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="GitHub" android:textSize="12sp" android:textColor="#888" />
+                    android:text="GitHub" android:textSize="12sp" android:textColor="#888888" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="github.com/ziachi" android:textSize="16sp" android:textColor="#5FCFB4" />
             </LinearLayout>
@@ -86,7 +86,7 @@
                 android:background="?android:attr/selectableItemBackground"
                 android:layout_marginBottom="4dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Telegram" android:textSize="12sp" android:textColor="#888" />
+                    android:text="Telegram" android:textSize="12sp" android:textColor="#888888" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="t.me/kalomakan" android:textSize="16sp" android:textColor="#5FCFB4" />
             </LinearLayout>
@@ -100,7 +100,7 @@
                 android:background="?android:attr/selectableItemBackground"
                 android:layout_marginBottom="4dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Source Code" android:textSize="12sp" android:textColor="#888" />
+                    android:text="Source Code" android:textSize="12sp" android:textColor="#888888" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="android-override" android:textSize="16sp" android:textColor="#5FCFB4" />
             </LinearLayout>

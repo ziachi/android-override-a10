@@ -1,12 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="OverrideTheme" parent="@android:style/Theme.DeviceDefault.DayNight">
+    <style name="OverrideTheme" parent="@android:style/Theme.DeviceDefault">
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:colorAccent">#5FCFB4</item>
         <item name="android:statusBarColor">#1A1A1A</item>
         <item name="android:navigationBarColor">#1A1A1A</item>
         <item name="android:windowBackground">#1A1A1A</item>
+        <!-- Force light text on dark background -->
+        <item name="android:textColorPrimary">#EEEEEE</item>
+        <item name="android:textColorSecondary">#AAAAAA</item>
+        <item name="android:textColorTertiary">#888888</item>
+        <item name="android:textColorHint">#666666</item>
+        <item name="android:editTextColor">#EEEEEE</item>
+        <item name="android:textColor">#EEEEEE</item>
+        <item name="android:colorForeground">#EEEEEE</item>
+        <!-- AlertDialog dark -->
+        <item name="android:alertDialogTheme">@style/DarkAlertDialog</item>
+    </style>
+    <!-- Dark AlertDialog so text is visible -->
+    <style name="DarkAlertDialog" parent="@android:style/Theme.DeviceDefault.Dialog.Alert">
+        <item name="android:textColorPrimary">#EEEEEE</item>
+        <item name="android:textColor">#EEEEEE</item>
+        <item name="android:editTextColor">#EEEEEE</item>
+        <item name="android:textColorHint">#666666</item>
     </style>
     <style name="SectionChip">
         <item name="android:textSize">12sp</item>

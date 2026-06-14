@@ -32,13 +32,11 @@ public class MainFragment extends Fragment {
         mStatusText = view.findViewById(R.id.text_status);
         mFingerprintPreview = view.findViewById(R.id.text_fingerprint_preview);
 
-        // Navigation cards
+        // Navigation cards — GMS spoofing only
         view.findViewById(R.id.card_fingerprint).setOnClickListener(v ->
                 navigateTo(new FingerprintFragment(), "fingerprint"));
         view.findViewById(R.id.card_keybox).setOnClickListener(v ->
                 navigateTo(new KeyboxFragment(), "keybox"));
-        view.findViewById(R.id.card_anti_detection).setOnClickListener(v ->
-                navigateTo(new AntiDetectionFragment(), "anti_detection"));
         view.findViewById(R.id.card_about).setOnClickListener(v ->
                 navigateTo(new AboutFragment(), "about"));
 
@@ -61,7 +59,8 @@ public class MainFragment extends Fragment {
             String display = fp.length() > 50 ? fp.substring(0, 50) + "..." : fp;
             mFingerprintPreview.setText(display);
             mFingerprintPreview.setVisibility(View.VISIBLE);
-            mStatusText.setText(hasKeybox ? "Active — Spoofing with keybox" : "Active — Fingerprint set");
+            mStatusText.setText(hasKeybox ?
+                    "Active — Spoofing with keybox" : "Active — Fingerprint set");
         } else {
             mFingerprintPreview.setVisibility(View.GONE);
             mStatusText.setText("Ready — Import fingerprint & keybox to activate");
