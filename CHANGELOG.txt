@@ -1,0 +1,11 @@
+
+## Commit #23 — Fix keybox import + add paste XML option
+- **Hash:** 0a7c46c
+- **Problem:** Keybox import fails silently on non-rooted devices
+- **Fix:**
+  - Add "Paste Keybox XML" option (bypass file access)
+  - Add importKeyboxFromContent() method
+  - Add ensureDirectoriesWithLog() with diagnostic logging
+  - Add detailed debug logging in import + validate
+  - KeyboxFragment: paste dialog, debug logging
+- **Files:** OverrideController.java, KeyboxFragment.java, fragment_keybox.xml
