@@ -18,3 +18,15 @@
   - All sub-paths now under /sdcard/.override/
   - SEPolicy updated (sdcard uses existing sdcard_type rules)
 - **Files:** OverrideController.java, override.te, file_contexts
+
+## Commit #25 — Fix cross-process config read (revert to /data/system/override)
+- **Hash:** 4b9bfbf
+- **Problem:** /sdcard/.override fails cross-process — FUSE blocks GMS from reading (exists=true canRead=false)
+- **Root cause:** FUSE per-app file ownership prevents cross-process reads
+- **Fix:**
+  - Revert CONFIG_DIR to /data/system/override (ext4, no FUSE)
+  - init.extras.rc creates dirs at boot (mkdir 0755 system system)
+  - Added type_transition in SEPolicy for correct file labels
+  - Added makeWorldReadable() — chmod 0644 after every file write
+  - Improved ensureDirectories logging
+- **Files:** OverrideController.java, override.te, file_contexts
