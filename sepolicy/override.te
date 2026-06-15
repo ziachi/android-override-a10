@@ -1,7 +1,10 @@
 # SELinux policy for Android Override framework (Qassa ROM / Android 10)
 #
-# Custom type for /data/system/override/ — allows cross-process access
-# so GMS (priv_app) can read config for attestation hooks.
+# Config moved to /sdcard/.override/ — no custom SELinux type needed
+# for sdcard access (handled by existing sdcard_type rules).
+#
+# This policy is kept for backward compatibility and in case
+# /data/system/override/ fallback is ever re-enabled.
 
 type override_data_file, file_type, data_file_type, core_data_file_type;
 
@@ -21,7 +24,7 @@ allow priv_app override_data_file:file { open read getattr };
 allow platform_app override_data_file:dir { open read search getattr };
 allow platform_app override_data_file:file { open read getattr };
 
-# init creates the directory at boot
+# init creates the directory at boot (legacy, may not be needed)
 allow init override_data_file:dir { create setattr };
 allow init override_data_file:file { getattr };
 

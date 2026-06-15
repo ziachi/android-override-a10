@@ -35,9 +35,9 @@ import java.util.Map;
  * Manages all configuration: fingerprint, keybox, per-app profiles,
  * anti-detection, auto-fallback, and profile saving/loading.
  *
- * Config stored in /data/system/override/ with SELinux type override_data_file.
- * This path is accessible by system_app (write) and priv_app/GMS (read),
- * ensuring cross-process attestation hooks work correctly.
+ * Config stored in /sdcard/.override/ — no root or custom SELinux needed.
+ * This path is accessible by any process with storage permission (system_app,
+ * priv_app/GMS, platform_app), ensuring cross-process attestation hooks work.
  *
  * Key differences from Android 13+ version:
  * - Uses Keymaster HAL (not KeyMint)
@@ -49,10 +49,10 @@ public class OverrideController {
 
     private static final String TAG = "OverrideController";
 
-    // Config stored at /data/system/override/ — accessible by all system processes
-    // SELinux type: override_data_file (defined in device sepolicy)
-    // Created by init.rc at boot: mkdir /data/system/override 0755 system system
-    private static final String CONFIG_DIR = "/data/system/override";
+    // Config stored at /sdcard/.override/ — accessible by all apps with storage permission
+    // No root required. No init.rc dependency. No custom SELinux type needed.
+    // GMS/system_server can read this path for attestation hooks.
+    private static final String CONFIG_DIR = "/sdcard/.override";
     private static final String CONFIG_FILE = CONFIG_DIR + "/config.json";
     private static final String PROFILES_DIR = CONFIG_DIR + "/profiles";
     private static final String KEYBOX_DIR = CONFIG_DIR + "/keybox";
@@ -106,7 +106,7 @@ public class OverrideController {
             synchronized (OverrideController.class) {
                 if (sInstance == null) {
                     sInstance = new OverrideController();
-                    // Auto-load config from /data/system/override/ for ALL processes
+                    // Auto-load config from /sdcard/.override/ for ALL processes
                     // This works for GMS, system_server, etc. without needing init()
                     sInstance.autoLoadConfig();
                 }
@@ -116,9 +116,9 @@ public class OverrideController {
     }
 
     /**
-     * Auto-load config from /data/system/override/config.json.
+     * Auto-load config from /sdcard/.override/config.json.
      * Called on first getInstance() in ANY process (GMS, system_server, apps).
-     * No init() needed — the path is fixed and SELinux allows read access.
+     * No init() needed — /sdcard is readable by all system processes.
      */
     private void autoLoadConfig() {
         if (mConfigLoaded) return;
