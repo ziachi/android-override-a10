@@ -158,3 +158,13 @@ Licensed under the Apache License, Version 2.0
 ```
 
 See [LICENSE](LICENSE) for full text.
+
+## SELinux Integration
+
+Override uses a custom SELinux type `override_data_file` for cross-process access:
+
+- Config path: `/data/system/override/`
+- Type: `override_data_file` (defined in `sepolicy/override.te`)
+- system_app: full read/write access
+- priv_app (GMS): read-only access for attestation hooks
+- Directory created at boot via `init.rc` with `restorecon`
