@@ -1,1 +1,2 @@
-# No custom file contexts needed
+# File contexts for Android Override framework
+/data/system/override(/.*)?    u:object_r:override_data_file:s0

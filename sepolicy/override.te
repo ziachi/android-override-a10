@@ -1,9 +1,31 @@
 # SELinux policy for Android Override framework (Qassa ROM / Android 10)
 #
-# Override config lives at /data/system/override/ — this path
-# inherits system_data_file label by default. system_server and
-# system_app already have full access to system_data_file.
-# No custom SELinux type needed.
+# Custom type for /data/system/override/ — allows cross-process access
+# so GMS (priv_app) can read config for attestation hooks.
 
-# Suppress noisy denials from untrusted apps trying to probe
-dontaudit untrusted_app system_data_file:dir search;
+type override_data_file, file_type, data_file_type, core_data_file_type;
+
+# system_app (OverrideSettings, runs as android.uid.system) - full access
+allow system_app override_data_file:dir { create open read write getattr setattr search add_name remove_name };
+allow system_app override_data_file:file { create open read write getattr setattr unlink rename };
+
+# system_server - read access
+allow system_server override_data_file:dir { open read search getattr };
+allow system_server override_data_file:file { open read getattr };
+
+# priv_app (GMS) - read access for attestation hooks
+allow priv_app override_data_file:dir { open read search getattr };
+allow priv_app override_data_file:file { open read getattr };
+
+# platform_app - read access
+allow platform_app override_data_file:dir { open read search getattr };
+allow platform_app override_data_file:file { open read getattr };
+
+# init creates the directory at boot
+allow init override_data_file:dir { create setattr };
+allow init override_data_file:file { getattr };
+
+# Suppress noisy denials from untrusted apps
+dontaudit untrusted_app override_data_file:dir search;
+dontaudit untrusted_app_25 override_data_file:dir search;
+dontaudit untrusted_app_27 override_data_file:dir search;

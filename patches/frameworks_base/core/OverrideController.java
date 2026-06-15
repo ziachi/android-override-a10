@@ -35,7 +35,9 @@ import java.util.Map;
  * Manages all configuration: fingerprint, keybox, per-app profiles,
  * anti-detection, auto-fallback, and profile saving/loading.
  *
- * Config stored in /data/system/override/ (OTA-safe).
+ * Config stored in /data/system/override/ with SELinux type override_data_file.
+ * This path is accessible by system_app (write) and priv_app/GMS (read),
+ * ensuring cross-process attestation hooks work correctly.
  *
  * Key differences from Android 13+ version:
  * - Uses Keymaster HAL (not KeyMint)
@@ -46,11 +48,15 @@ import java.util.Map;
 public class OverrideController {
 
     private static final String TAG = "OverrideController";
-    private static String CONFIG_DIR = "/data/system/override";
-    private static String CONFIG_FILE = CONFIG_DIR + "/config.json";
-    private static String PROFILES_DIR = CONFIG_DIR + "/profiles";
-    private static String KEYBOX_DIR = CONFIG_DIR + "/keybox";
-    private static String PROPS_DB_FILE = CONFIG_DIR + "/props_database.json";
+
+    // Config stored at /data/system/override/ — accessible by all system processes
+    // SELinux type: override_data_file (defined in device sepolicy)
+    // Created by init.rc at boot: mkdir /data/system/override 0755 system system
+    private static final String CONFIG_DIR = "/data/system/override";
+    private static final String CONFIG_FILE = CONFIG_DIR + "/config.json";
+    private static final String PROFILES_DIR = CONFIG_DIR + "/profiles";
+    private static final String KEYBOX_DIR = CONFIG_DIR + "/keybox";
+    private static final String PROPS_DB_FILE = CONFIG_DIR + "/props_database.json";
 
     private static volatile OverrideController sInstance;
     private Context mContext;
@@ -90,9 +96,7 @@ public class OverrideController {
     // Props database
     private Map<String, PropsEntry> mPropsDatabase = new LinkedHashMap<>();
 
-    // Known path where OverrideSettings app stores config
-    // Used by other processes (GMS, system_server) that don't call init()
-    private static final String KNOWN_DATA_DIR = "/data/data/com.android.override.settings/app_override";
+    // Track whether config has been loaded
     private boolean mConfigLoaded = false;
 
     private OverrideController() {}
@@ -102,8 +106,9 @@ public class OverrideController {
             synchronized (OverrideController.class) {
                 if (sInstance == null) {
                     sInstance = new OverrideController();
-                    // Auto-load config from known path for non-init'd processes (GMS, system_server)
-                    sInstance.tryAutoLoad();
+                    // Auto-load config from /data/system/override/ for ALL processes
+                    // This works for GMS, system_server, etc. without needing init()
+                    sInstance.autoLoadConfig();
                 }
             }
         }
@@ -111,66 +116,50 @@ public class OverrideController {
     }
 
     /**
-     * Auto-load config when init() hasn't been called.
-     * This happens in GMS process (for attestation hook) and system_server.
+     * Auto-load config from /data/system/override/config.json.
+     * Called on first getInstance() in ANY process (GMS, system_server, apps).
+     * No init() needed — the path is fixed and SELinux allows read access.
      */
-    private void tryAutoLoad() {
+    private void autoLoadConfig() {
         if (mConfigLoaded) return;
 
-        File knownConfig = new File(KNOWN_DATA_DIR + "/config.json");
-        if (knownConfig.exists() && knownConfig.canRead()) {
-            CONFIG_DIR = KNOWN_DATA_DIR;
-            CONFIG_FILE = CONFIG_DIR + "/config.json";
-            PROFILES_DIR = CONFIG_DIR + "/profiles";
-            KEYBOX_DIR = CONFIG_DIR + "/keybox";
-            PROPS_DB_FILE = CONFIG_DIR + "/props_database.json";
+        File configFile = new File(CONFIG_FILE);
+        if (configFile.exists() && configFile.canRead()) {
             loadConfig();
-            Log.i(TAG, "Auto-loaded config from " + KNOWN_DATA_DIR
+            Log.i(TAG, "Config loaded from " + CONFIG_DIR
                     + " enabled=" + mEnabled + " keybox=" + mKeyboxEnabled
                     + " spoof=" + mSpoofAttestation);
         } else {
-            Log.d(TAG, "No config at " + KNOWN_DATA_DIR + " (exists="
-                    + knownConfig.exists() + " canRead=" + knownConfig.canRead() + ")");
+            Log.d(TAG, "No config at " + CONFIG_FILE + " (exists="
+                    + configFile.exists() + " canRead=" + configFile.canRead() + ")");
         }
     }
 
     /**
-     * Initialize with context (called from BootReceiver or system server).
+     * Initialize with context (called from OverrideSettings app and BootReceiver).
+     * Creates directories if needed and loads/reloads config.
+     * Only the OverrideSettings app (system_app) needs to call this.
      */
     public static void init(Context context) {
-        Log.e(TAG, "init() ENTER - context=" + context);
+        Log.d(TAG, "init() context=" + context);
         OverrideController instance = getInstance();
-        Log.e(TAG, "init() getInstance OK");
         instance.mContext = context;
-
-        // Use app data dir (SELinux allows this, /data/system/ is blocked)
-        File baseDir = context.getDir("override", Context.MODE_PRIVATE);
-        CONFIG_DIR = baseDir.getAbsolutePath();
-        CONFIG_FILE = CONFIG_DIR + "/config.json";
-        PROFILES_DIR = CONFIG_DIR + "/profiles";
-        KEYBOX_DIR = CONFIG_DIR + "/keybox";
-        PROPS_DB_FILE = CONFIG_DIR + "/props_database.json";
-        Log.e(TAG, "init() CONFIG_DIR=" + CONFIG_DIR);
 
         try {
             instance.ensureDirectories();
-            // Make dirs world-accessible so GMS/system_server can read config
-            File appDataDir = baseDir.getParentFile();
-            if (appDataDir != null) {
-                appDataDir.setExecutable(true, false);
-            }
-            baseDir.setExecutable(true, false);
-            baseDir.setReadable(true, false);
-            new File(KEYBOX_DIR).setExecutable(true, false);
-            new File(KEYBOX_DIR).setReadable(true, false);
-            Log.e(TAG, "init() ensureDirectories OK + world-accessible");
+            Log.d(TAG, "init() directories OK at " + CONFIG_DIR);
         } catch (Throwable t) {
             Log.e(TAG, "init() ensureDirectories FAILED", t);
         }
+
+        // Reload config (may have been auto-loaded already, but reload for freshness)
         instance.loadConfig();
         instance.loadPropsDatabase();
+
         Log.i(TAG, "OverrideController [A10] initialized"
                 + " enabled=" + instance.mEnabled
+                + " keybox=" + instance.mKeyboxEnabled
+                + " spoof=" + instance.mSpoofAttestation
                 + " fp=" + (instance.mFingerprint != null && instance.mFingerprint.length() > 20
                     ? instance.mFingerprint.substring(0, 20) + "..." : instance.mFingerprint));
     }
@@ -248,8 +237,7 @@ public class OverrideController {
             }
 
             mConfigLoaded = true;
-            Log.d(TAG, "Config loaded successfully"
-                    + " keybox=" + mKeyboxEnabled + " spoof=" + mSpoofAttestation);
+            Log.d(TAG, "Config loaded keybox=" + mKeyboxEnabled + " spoof=" + mSpoofAttestation);
         } catch (Exception e) {
             Log.e(TAG, "Failed to load config", e);
         }
@@ -301,17 +289,11 @@ public class OverrideController {
             json.put("hidden_apps", hidden);
 
             // Ensure config directory exists
-            File configDir = new File(CONFIG_DIR);
-            if (!configDir.exists()) {
-                configDir.mkdirs();
-            }
+            ensureDirectories();
 
             FileWriter writer = new FileWriter(CONFIG_FILE);
             writer.write(json.toString(2));
             writer.close();
-
-            // Make config world-readable so GMS can read it for attestation hook
-            new File(CONFIG_FILE).setReadable(true, false);
 
             Log.d(TAG, "Config saved (keybox=" + mKeyboxEnabled + ")");
         } catch (Exception e) {
@@ -479,9 +461,7 @@ public class OverrideController {
      */
     public boolean importKeybox(String sourcePath, String slotName) {
         try {
-            // Ensure directories exist (fallback if init() wasn't called)
-            new File(CONFIG_DIR).mkdirs();
-            new File(KEYBOX_DIR).mkdirs();
+            ensureDirectories();
 
             File source = new File(sourcePath);
             File dest = new File(KEYBOX_DIR + "/" + slotName + ".xml");
@@ -501,12 +481,6 @@ public class OverrideController {
             fis.close();
             fos.close();
 
-            // Set permissions — world-readable so GMS process can access
-            dest.setReadable(true, false);
-            dest.setWritable(true, true);
-            dest.getParentFile().setExecutable(true, false);
-            dest.getParentFile().setReadable(true, false);
-
             mActiveKeyboxSlot = slotName;
             mKeyboxEnabled = true;
             mSpoofAttestation = true;
@@ -520,10 +494,6 @@ public class OverrideController {
         }
     }
 
-    /**
-     * Validate keybox XML has required structure.
-     * Keymaster format (Android 10): expects Keybox with PrivateKey and Certificate.
-     */
     /**
      * Validate keybox XML has required structure.
      * Accepts multiple formats:
