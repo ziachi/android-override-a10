@@ -9,3 +9,12 @@
   - Add detailed debug logging in import + validate
   - KeyboxFragment: paste dialog, debug logging
 - **Files:** OverrideController.java, KeyboxFragment.java, fragment_keybox.xml
+
+## Commit #24 — Rework config storage to /sdcard/.override
+- **Hash:** b8816b2
+- **Problem:** /data/system/override/ cannot be created without root — mkdirs() fails, all config/keybox operations broken
+- **Fix:**
+  - Change CONFIG_DIR to /sdcard/.override (no root, no init.rc needed)
+  - All sub-paths now under /sdcard/.override/
+  - SEPolicy updated (sdcard uses existing sdcard_type rules)
+- **Files:** OverrideController.java, override.te, file_contexts
