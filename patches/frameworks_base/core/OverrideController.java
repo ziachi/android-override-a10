@@ -167,9 +167,39 @@ public class OverrideController {
     // ========== Directories ==========
 
     private void ensureDirectories() {
-        new File(CONFIG_DIR).mkdirs();
-        new File(PROFILES_DIR).mkdirs();
-        new File(KEYBOX_DIR).mkdirs();
+        ensureDirectoriesWithLog();
+    }
+
+    private boolean ensureDirectoriesWithLog() {
+        boolean allOk = true;
+
+        File configDir = new File(CONFIG_DIR);
+        if (!configDir.exists()) {
+            boolean created = configDir.mkdirs();
+            Log.d(TAG, "ensureDirectories: " + CONFIG_DIR + " created=" + created);
+            if (!created) allOk = false;
+        }
+
+        File profilesDir = new File(PROFILES_DIR);
+        if (!profilesDir.exists()) {
+            boolean created = profilesDir.mkdirs();
+            Log.d(TAG, "ensureDirectories: " + PROFILES_DIR + " created=" + created);
+            if (!created) allOk = false;
+        }
+
+        File keyboxDir = new File(KEYBOX_DIR);
+        if (!keyboxDir.exists()) {
+            boolean created = keyboxDir.mkdirs();
+            Log.d(TAG, "ensureDirectories: " + KEYBOX_DIR + " created=" + created);
+            if (!created) allOk = false;
+        }
+
+        Log.d(TAG, "ensureDirectories: config_exists=" + configDir.exists()
+                + " config_writable=" + configDir.canWrite()
+                + " keybox_exists=" + keyboxDir.exists()
+                + " keybox_writable=" + keyboxDir.canWrite());
+
+        return allOk;
     }
 
     // ========== Config Load/Save ==========
@@ -461,14 +491,37 @@ public class OverrideController {
      */
     public boolean importKeybox(String sourcePath, String slotName) {
         try {
-            ensureDirectories();
+            Log.d(TAG, "importKeybox: source=" + sourcePath + " slot=" + slotName);
+
+            boolean dirsOk = ensureDirectoriesWithLog();
+            if (!dirsOk) {
+                Log.e(TAG, "importKeybox: directory creation FAILED");
+                // Continue anyway — maybe dirs exist but mkdirs returned false
+            }
 
             File source = new File(sourcePath);
+            Log.d(TAG, "importKeybox: source exists=" + source.exists()
+                    + " canRead=" + source.canRead()
+                    + " length=" + source.length());
+
+            if (!source.exists()) {
+                Log.e(TAG, "importKeybox: source file does NOT exist: " + sourcePath);
+                return false;
+            }
+            if (!source.canRead()) {
+                Log.e(TAG, "importKeybox: source file NOT readable: " + sourcePath);
+                return false;
+            }
+            if (source.length() == 0) {
+                Log.e(TAG, "importKeybox: source file is EMPTY: " + sourcePath);
+                return false;
+            }
+
             File dest = new File(KEYBOX_DIR + "/" + slotName + ".xml");
 
             // Validate XML format before copying
             if (!validateKeyboxXml(source)) {
-                Log.e(TAG, "Invalid keybox XML format");
+                Log.e(TAG, "importKeybox: validation FAILED for " + sourcePath);
                 return false;
             }
 
@@ -477,9 +530,16 @@ public class OverrideController {
             FileOutputStream fos = new FileOutputStream(dest);
             byte[] buf = new byte[8192];
             int len;
-            while ((len = fis.read(buf)) > 0) fos.write(buf, 0, len);
+            long copied = 0;
+            while ((len = fis.read(buf)) > 0) {
+                fos.write(buf, 0, len);
+                copied += len;
+            }
             fis.close();
             fos.close();
+
+            Log.d(TAG, "importKeybox: copied " + copied + " bytes to " + dest.getAbsolutePath()
+                    + " dest_exists=" + dest.exists() + " dest_length=" + dest.length());
 
             mActiveKeyboxSlot = slotName;
             mKeyboxEnabled = true;
@@ -489,7 +549,61 @@ public class OverrideController {
             Log.i(TAG, "Keybox imported and enabled, slot: " + slotName);
             return true;
         } catch (Exception e) {
-            Log.e(TAG, "Failed to import keybox", e);
+            Log.e(TAG, "Failed to import keybox from " + sourcePath, e);
+            return false;
+        }
+    }
+
+    /**
+     * Import keybox from raw XML content string (paste).
+     * Bypasses file access — writes content directly to slot file.
+     */
+    public boolean importKeyboxFromContent(String xmlContent) {
+        return importKeyboxFromContent(xmlContent, mActiveKeyboxSlot);
+    }
+
+    public boolean importKeyboxFromContent(String xmlContent, String slotName) {
+        try {
+            Log.d(TAG, "importKeyboxFromContent: length=" + xmlContent.length()
+                    + " slot=" + slotName);
+
+            boolean dirsOk = ensureDirectoriesWithLog();
+            Log.d(TAG, "importKeyboxFromContent: dirs=" + dirsOk);
+
+            // Validate content
+            String lower = xmlContent.toLowerCase();
+            boolean hasKeybox = lower.contains("<keybox") || lower.contains("<androidattestation");
+            boolean hasPrivateKey = lower.contains("private key");
+            boolean hasCertificate = lower.contains("certificate");
+
+            Log.d(TAG, "importKeyboxFromContent: validate keybox=" + hasKeybox
+                    + " key=" + hasPrivateKey + " cert=" + hasCertificate);
+
+            if (!hasKeybox || !hasPrivateKey || !hasCertificate) {
+                Log.e(TAG, "importKeyboxFromContent: validation FAILED"
+                        + " (first 200 chars: " + xmlContent.substring(0, Math.min(200, xmlContent.length())) + ")");
+                return false;
+            }
+
+            // Write directly to slot file
+            File dest = new File(KEYBOX_DIR + "/" + slotName + ".xml");
+            Log.d(TAG, "importKeyboxFromContent: writing to " + dest.getAbsolutePath());
+
+            FileWriter writer = new FileWriter(dest);
+            writer.write(xmlContent);
+            writer.close();
+
+            Log.d(TAG, "importKeyboxFromContent: written OK, size=" + dest.length());
+
+            mActiveKeyboxSlot = slotName;
+            mKeyboxEnabled = true;
+            mSpoofAttestation = true;
+            mEnabled = true;
+            saveConfig();
+            Log.i(TAG, "Keybox imported from content, slot: " + slotName);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to import keybox from content", e);
             return false;
         }
     }
@@ -503,27 +617,46 @@ public class OverrideController {
      */
     private boolean validateKeyboxXml(File file) {
         try {
+            Log.d(TAG, "validateKeyboxXml: file=" + file.getAbsolutePath()
+                    + " exists=" + file.exists()
+                    + " canRead=" + file.canRead()
+                    + " length=" + file.length());
+
+            if (!file.exists() || !file.canRead() || file.length() == 0) {
+                Log.e(TAG, "validateKeyboxXml: file not accessible or empty");
+                return false;
+            }
+
             // Use string matching instead of XML parser to handle HTML comments
             FileInputStream fis = new FileInputStream(file);
             byte[] bytes = new byte[(int) file.length()];
-            fis.read(bytes);
+            int totalRead = 0;
+            int read;
+            while (totalRead < bytes.length && (read = fis.read(bytes, totalRead, bytes.length - totalRead)) > 0) {
+                totalRead += read;
+            }
             fis.close();
-            String content = new String(bytes, "UTF-8").toLowerCase();
 
-            boolean hasKeybox = content.contains("<keybox") || content.contains("<androidattestation");
-            boolean hasPrivateKey = content.contains("private key");
-            boolean hasCertificate = content.contains("certificate");
+            Log.d(TAG, "validateKeyboxXml: read " + totalRead + " bytes");
+
+            String content = new String(bytes, 0, totalRead, "UTF-8");
+            String lower = content.toLowerCase();
+
+            // Log first 300 chars for debugging
+            String preview = content.substring(0, Math.min(300, content.length()));
+            Log.d(TAG, "validateKeyboxXml: preview=" + preview.replace("\n", " "));
+
+            boolean hasKeybox = lower.contains("<keybox") || lower.contains("<androidattestation");
+            boolean hasPrivateKey = lower.contains("private key");
+            boolean hasCertificate = lower.contains("certificate");
 
             boolean valid = hasKeybox && hasPrivateKey && hasCertificate;
-            if (!valid) {
-                Log.w(TAG, "Keybox validation: keybox=" + hasKeybox
-                        + " key=" + hasPrivateKey + " cert=" + hasCertificate);
-            } else {
-                Log.d(TAG, "Keybox validation passed");
-            }
+            Log.d(TAG, "validateKeyboxXml: keybox=" + hasKeybox
+                    + " key=" + hasPrivateKey + " cert=" + hasCertificate
+                    + " → " + (valid ? "PASS" : "FAIL"));
             return valid;
         } catch (Exception e) {
-            Log.e(TAG, "Keybox validation error: " + e.getMessage());
+            Log.e(TAG, "validateKeyboxXml error", e);
             return false;
         }
     }

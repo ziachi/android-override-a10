@@ -10,6 +10,7 @@ import android.app.Fragment;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +29,7 @@ import java.io.InputStream;
 
 public class KeyboxFragment extends Fragment {
 
+    private static final String TAG = "KeyboxFragment";
     private static final int PICK_KEYBOX_FILE = 1001;
 
     private Switch mKeyboxSwitch;
@@ -58,7 +60,7 @@ public class KeyboxFragment extends Fragment {
         mKeyboxSlot = view.findViewById(R.id.text_keybox_slot);
         mKeyboxHealth = view.findViewById(R.id.text_keybox_health);
 
-        // Import from file picker — use */* to accept all file types
+        // Import from file picker
         view.findViewById(R.id.btn_import_keybox).setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("*/*");
@@ -69,6 +71,11 @@ public class KeyboxFragment extends Fragment {
 
         view.findViewById(R.id.btn_import_path).setOnClickListener(v ->
                 showImportFromPathDialog());
+
+        // Paste XML button
+        view.findViewById(R.id.btn_paste_keybox).setOnClickListener(v ->
+                showPasteKeyboxDialog());
+
         view.findViewById(R.id.btn_health_check).setOnClickListener(v ->
                 checkHealth());
         view.findViewById(R.id.btn_manage_slots).setOnClickListener(v ->
@@ -89,14 +96,30 @@ public class KeyboxFragment extends Fragment {
 
     private void importKeyboxFromUri(Uri uri) {
         try {
+            Log.d(TAG, "importKeyboxFromUri: uri=" + uri);
             InputStream is = getActivity().getContentResolver().openInputStream(uri);
+            if (is == null) {
+                Log.e(TAG, "openInputStream returned null for uri=" + uri);
+                Toast.makeText(getActivity(),
+                        "Cannot read file (null stream)", Toast.LENGTH_LONG).show();
+                return;
+            }
+
             File tempFile = new File(getActivity().getCacheDir(), "keybox_import.xml");
             FileOutputStream fos = new FileOutputStream(tempFile);
             byte[] buf = new byte[8192];
             int len;
-            while ((len = is.read(buf)) > 0) fos.write(buf, 0, len);
+            long total = 0;
+            while ((len = is.read(buf)) > 0) {
+                fos.write(buf, 0, len);
+                total += len;
+            }
             is.close();
             fos.close();
+
+            Log.d(TAG, "Temp file written: " + tempFile.getAbsolutePath()
+                    + " size=" + total + " exists=" + tempFile.exists()
+                    + " length=" + tempFile.length());
 
             OverrideController controller = OverrideController.getInstance();
             boolean success = controller.importKeybox(tempFile.getAbsolutePath());
@@ -105,12 +128,15 @@ public class KeyboxFragment extends Fragment {
                 KeyboxManager.getInstance().reload();
                 Toast.makeText(getActivity(), "Keybox imported!", Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(getActivity(), "Invalid keybox format", Toast.LENGTH_LONG).show();
+                Toast.makeText(getActivity(),
+                        "Invalid keybox format — check logcat OverrideController",
+                        Toast.LENGTH_LONG).show();
             }
 
             tempFile.delete();
             updateStatus();
         } catch (Exception e) {
+            Log.e(TAG, "importKeyboxFromUri failed", e);
             Toast.makeText(getActivity(),
                     "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
@@ -122,20 +148,79 @@ public class KeyboxFragment extends Fragment {
 
         final EditText input = new EditText(getActivity());
         input.setHint("/sdcard/keybox.xml");
+        input.setTextColor(0xFFEEEEEE);
+        input.setHintTextColor(0xFF888888);
         builder.setView(input);
 
         builder.setPositiveButton("Import", (dialog, which) -> {
             String path = input.getText().toString().trim();
             if (!path.isEmpty()) {
+                Log.d(TAG, "Import from path: " + path);
+                File f = new File(path);
+                Log.d(TAG, "File exists=" + f.exists() + " canRead=" + f.canRead()
+                        + " length=" + f.length());
+
                 OverrideController controller = OverrideController.getInstance();
                 boolean success = controller.importKeybox(path);
                 if (success) {
                     KeyboxManager.getInstance().reload();
                     Toast.makeText(getActivity(), "Keybox imported!", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(getActivity(), "Import failed", Toast.LENGTH_LONG).show();
+                    Toast.makeText(getActivity(),
+                            "Import failed — check logcat OverrideController",
+                            Toast.LENGTH_LONG).show();
                 }
                 updateStatus();
+            }
+        });
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
+    }
+
+    /**
+     * Paste keybox XML content directly — bypasses all file access issues.
+     * User copies XML content and pastes into the dialog.
+     */
+    private void showPasteKeyboxDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setTitle("Paste Keybox XML");
+
+        final EditText input = new EditText(getActivity());
+        input.setHint("Paste keybox XML content here...");
+        input.setTextColor(0xFFEEEEEE);
+        input.setHintTextColor(0xFF888888);
+        input.setMinLines(5);
+        input.setMaxLines(15);
+        input.setTextSize(12);
+        input.setHorizontallyScrolling(true);
+        builder.setView(input);
+
+        builder.setPositiveButton("Import", (dialog, which) -> {
+            String xmlContent = input.getText().toString().trim();
+            if (xmlContent.isEmpty()) {
+                Toast.makeText(getActivity(), "No content", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Log.d(TAG, "Paste keybox: content length=" + xmlContent.length());
+
+            try {
+                OverrideController controller = OverrideController.getInstance();
+                boolean success = controller.importKeyboxFromContent(xmlContent);
+
+                if (success) {
+                    KeyboxManager.getInstance().reload();
+                    Toast.makeText(getActivity(), "Keybox imported!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getActivity(),
+                            "Invalid keybox — check logcat OverrideController",
+                            Toast.LENGTH_LONG).show();
+                }
+                updateStatus();
+            } catch (Exception e) {
+                Log.e(TAG, "Paste keybox failed", e);
+                Toast.makeText(getActivity(),
+                        "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
         builder.setNegativeButton("Cancel", null);
