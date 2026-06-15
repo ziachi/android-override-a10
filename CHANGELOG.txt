@@ -30,3 +30,14 @@
   - Added makeWorldReadable() — chmod 0644 after every file write
   - Improved ensureDirectories logging
 - **Files:** OverrideController.java, override.te, file_contexts
+
+## Commit #26 — Fix SELinux: system_data_file search for /data/system/ navigation
+- **Hash:** 74aca0a
+- **Problem:** /data/system/override/ exists but all processes see exists=false (ENOENT crash)
+- **Root cause:** system_app/priv_app lack "search" on system_data_file:dir — SELinux blocks path traversal through /data/system/
+- **Fix:**
+  - Added search+getattr on system_data_file:dir for system_app, priv_app, platform_app
+  - Added add_name+write for system_app (fallback dir creation)
+  - Named type_transition: "override" dir auto-labeled override_data_file
+  - Java: importKeybox verifies KEYBOX_DIR exists before write (no more ENOENT crash)
+- **Files:** OverrideController.java, override.te
