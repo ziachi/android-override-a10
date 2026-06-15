@@ -26,3 +26,4 @@
 | 20 | bb546f3 | Sync SEPolicy + file_contexts with Qassa build |
 
 | 21 | 642b180 | Fix cross-process config: /data/system/override + SELinux type |
+| 22 | 80b943b | Fix ASN.1 tag bugs + dynamic key type in attestation |
