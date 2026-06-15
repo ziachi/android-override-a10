@@ -19,6 +19,8 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -48,6 +50,21 @@ import java.util.List;
  * - Verified boot state must be Verified (0)
  * - Device must appear locked
  * - Cert chain must be rooted in Google's attestation root CA
+ *
+ * ASN.1 AuthorizationList tag reference (Keymaster v4):
+ *   [1]   purpose          SET OF INTEGER
+ *   [2]   algorithm        INTEGER          (EC=3, RSA=1)
+ *   [3]   keySize          INTEGER          (256, 2048, etc.)
+ *   [5]   digest           SET OF INTEGER   (SHA256=4)
+ *   [6]   padding          SET OF INTEGER
+ *   [10]  ecCurve          INTEGER          (P256=1)
+ *   [200] origin           INTEGER          (Generated=0)
+ *   [303] rootOfTrust      SEQUENCE         (KM_TAG_ROOT_OF_TRUST → tag 704 in attestation)
+ *   [701] creationDateTime INTEGER
+ *   [704] rootOfTrust      RootOfTrust SEQUENCE
+ *   [705] osVersion        INTEGER
+ *   [706] osPatchLevel     INTEGER
+ *   [709] attestationApplicationId  OCTET STRING
  */
 public class KeystoreIntegration {
 
@@ -59,6 +76,22 @@ public class KeystoreIntegration {
     // Keymaster versions
     private static final int KEYMASTER_VERSION = 4;  // Keymaster 4.x for A10
     private static final int ATTESTATION_VERSION = 3; // Attestation v3 for Keymaster 4
+
+    // Keymaster algorithm constants
+    private static final int KM_ALGORITHM_RSA = 1;
+    private static final int KM_ALGORITHM_EC = 3;
+
+    // Keymaster digest constants
+    private static final int KM_DIGEST_SHA256 = 4;
+
+    // Keymaster purpose constants
+    private static final int KM_PURPOSE_SIGN = 2;
+
+    // Keymaster EC curve constants
+    private static final int KM_EC_CURVE_P256 = 1;
+
+    // Keymaster origin constants
+    private static final int KM_ORIGIN_GENERATED = 0;
 
     /**
      * Check if we should intercept attestation for this process.
@@ -100,7 +133,7 @@ public class KeystoreIntegration {
             KeyboxManager keybox = KeyboxManager.getInstance();
             PrivateKey signingKey = keybox.getPrivateKey();
             List<X509Certificate> keyboxChain = keybox.getCertificateChain();
-            String algorithm = keybox.getKeyAlgorithm();
+            String signingAlgorithm = keybox.getKeyAlgorithm();
 
             if (signingKey == null || keyboxChain.isEmpty()) {
                 Log.e(TAG, "Keybox not ready: key=" + (signingKey != null)
@@ -109,6 +142,12 @@ public class KeystoreIntegration {
                 return null;
             }
 
+            // Detect the attested key type
+            KeyInfo attestedKeyInfo = detectKeyType(publicKeyToAttest);
+            Log.d(TAG, "Attested key: algo=" + attestedKeyInfo.algorithmName
+                    + " size=" + attestedKeyInfo.keySize
+                    + ", Signing key: algo=" + signingAlgorithm);
+
             // Build the leaf attestation certificate
             byte[] leafCertBytes = buildAttestationLeafCert(
                     publicKeyToAttest,
@@ -116,7 +155,8 @@ public class KeystoreIntegration {
                     keyboxChain.get(0), // issuer cert
                     challenge,
                     applicationId,
-                    algorithm,
+                    signingAlgorithm,
+                    attestedKeyInfo,
                     isStrongBox);
 
             if (leafCertBytes == null) {
@@ -133,7 +173,9 @@ public class KeystoreIntegration {
             }
 
             Log.i(TAG, "Attestation chain generated: " + chain.size()
-                    + " certs, algo=" + algorithm
+                    + " certs, signing=" + signingAlgorithm
+                    + ", attested=" + attestedKeyInfo.algorithmName
+                    + "/" + attestedKeyInfo.keySize
                     + ", challenge=" + challenge.length + " bytes");
 
             keybox.reportSuccess();
@@ -144,6 +186,29 @@ public class KeystoreIntegration {
             KeyboxManager.getInstance().reportFailure();
             return null;
         }
+    }
+
+    /**
+     * Detect key type and size from a PublicKey instance.
+     */
+    private static KeyInfo detectKeyType(PublicKey key) {
+        if (key instanceof ECPublicKey) {
+            ECPublicKey ecKey = (ECPublicKey) key;
+            int fieldSize = ecKey.getParams().getCurve().getField().getFieldSize();
+            return new KeyInfo(KM_ALGORITHM_EC, "EC", fieldSize,
+                    fieldSize == 256 ? KM_EC_CURVE_P256 : KM_EC_CURVE_P256);
+        } else if (key instanceof RSAPublicKey) {
+            RSAPublicKey rsaKey = (RSAPublicKey) key;
+            int keySize = rsaKey.getModulus().bitLength();
+            return new KeyInfo(KM_ALGORITHM_RSA, "RSA", keySize, -1);
+        }
+        // Fallback: try to determine from key algorithm name
+        String algo = key.getAlgorithm();
+        if ("RSA".equalsIgnoreCase(algo)) {
+            return new KeyInfo(KM_ALGORITHM_RSA, "RSA", 2048, -1);
+        }
+        // Default to EC P-256
+        return new KeyInfo(KM_ALGORITHM_EC, "EC", 256, KM_EC_CURVE_P256);
     }
 
     /**
@@ -161,22 +226,23 @@ public class KeystoreIntegration {
             X509Certificate issuerCert,
             byte[] challenge,
             byte[] applicationId,
-            String algorithm,
+            String signingAlgorithm,
+            KeyInfo attestedKeyInfo,
             boolean isStrongBox) throws Exception {
 
-        // Build attestation extension
+        // Build attestation extension with correct key info
         byte[] attestationExtension = buildAttestationExtension(
-                challenge, applicationId, isStrongBox);
+                challenge, applicationId, attestedKeyInfo, isStrongBox);
 
         // Build TBS (To-Be-Signed) certificate structure
         byte[] tbsCert = buildTBSCertificate(
                 subjectKey,
                 issuerCert,
                 attestationExtension,
-                algorithm);
+                signingAlgorithm);
 
-        // Sign
-        String sigAlgo = "EC".equals(algorithm) ?
+        // Sign with keybox private key
+        String sigAlgo = "EC".equals(signingAlgorithm) ?
                 "SHA256withECDSA" : "SHA256withRSA";
         Signature sig = Signature.getInstance(sigAlgo);
         sig.initSign(signingKey);
@@ -184,7 +250,7 @@ public class KeystoreIntegration {
         byte[] signature = sig.sign();
 
         // Wrap in X.509 Certificate structure
-        return buildX509Certificate(tbsCert, signature, algorithm);
+        return buildX509Certificate(tbsCert, signature, signingAlgorithm);
     }
 
     /**
@@ -207,6 +273,7 @@ public class KeystoreIntegration {
     private static byte[] buildAttestationExtension(
             byte[] challenge,
             byte[] applicationId,
+            KeyInfo attestedKeyInfo,
             boolean isStrongBox) throws Exception {
 
         int securityLevel = isStrongBox ?
@@ -241,8 +308,8 @@ public class KeystoreIntegration {
         // softwareEnforced AuthorizationList (minimal)
         seqContent.write(buildSoftwareEnforcedAuthList(applicationId));
 
-        // teeEnforced AuthorizationList (with RootOfTrust)
-        seqContent.write(buildTeeEnforcedAuthList(rot));
+        // teeEnforced AuthorizationList (with RootOfTrust + correct key info)
+        seqContent.write(buildTeeEnforcedAuthList(rot, attestedKeyInfo));
 
         // Wrap in SEQUENCE
         byte[] seqBytes = seqContent.toByteArray();
@@ -262,12 +329,12 @@ public class KeystoreIntegration {
     private static byte[] buildSoftwareEnforcedAuthList(byte[] applicationId) throws Exception {
         ByteArrayOutputStream content = new ByteArrayOutputStream();
 
-        // Tag 701 (0x02BD) = creationDateTime [CONTEXT 701]
+        // Tag 701 = creationDateTime [CONTEXT 701]
         long now = System.currentTimeMillis();
         byte[] dateTag = asn1ExplicitTag(701, asn1Integer(now));
         content.write(dateTag);
 
-        // Tag 709 (0x02C5) = attestationApplicationId [CONTEXT 709]
+        // Tag 709 = attestationApplicationId [CONTEXT 709]
         if (applicationId != null && applicationId.length > 0) {
             byte[] appIdTag = asn1ExplicitTag(709, asn1OctetString(applicationId));
             content.write(appIdTag);
@@ -286,14 +353,27 @@ public class KeystoreIntegration {
      *
      * Contains RootOfTrust, purpose, algorithm, key size, digest, etc.
      * This is the critical part for hardware attestation.
+     *
+     * Tag reference (Keymaster attestation ASN.1):
+     *   [1]   purpose     SET OF INTEGER
+     *   [2]   algorithm   INTEGER          ← was WRONG (used [5])
+     *   [3]   keySize     INTEGER          ← was WRONG (used [6])
+     *   [5]   digest      SET OF INTEGER
+     *   [6]   padding     SET OF INTEGER
+     *   [10]  ecCurve     INTEGER          (only for EC keys)
+     *   [200] origin      INTEGER
+     *   [704] rootOfTrust RootOfTrust SEQUENCE
+     *   [705] osVersion   INTEGER
+     *   [706] osPatchLevel INTEGER
      */
     private static byte[] buildTeeEnforcedAuthList(
-            AttestationHooks.RootOfTrust rot) throws Exception {
+            AttestationHooks.RootOfTrust rot,
+            KeyInfo keyInfo) throws Exception {
         ByteArrayOutputStream content = new ByteArrayOutputStream();
 
-        // Tag 1 = purpose SET {sign(2), verify(3)}
+        // [1] purpose SET {sign(2)}
         ByteArrayOutputStream purposeSet = new ByteArrayOutputStream();
-        purposeSet.write(asn1Integer(2)); // sign
+        purposeSet.write(asn1Integer(KM_PURPOSE_SIGN));
         byte[] purposeSetBytes = purposeSet.toByteArray();
         ByteArrayOutputStream purposeSetWrapper = new ByteArrayOutputStream();
         purposeSetWrapper.write(0x31); // SET
@@ -301,15 +381,15 @@ public class KeystoreIntegration {
         purposeSetWrapper.write(purposeSetBytes);
         content.write(asn1ExplicitTag(1, purposeSetWrapper.toByteArray()));
 
-        // Tag 5 = algorithm (EC=3, RSA=1)
-        content.write(asn1ExplicitTag(5, asn1Integer(3))); // EC
+        // [2] algorithm INTEGER — FIXED: was using tag [5]
+        content.write(asn1ExplicitTag(2, asn1Integer(keyInfo.algorithm)));
 
-        // Tag 6 = keySize (256 for P-256)
-        content.write(asn1ExplicitTag(6, asn1Integer(256)));
+        // [3] keySize INTEGER — FIXED: was using tag [6]
+        content.write(asn1ExplicitTag(3, asn1Integer(keyInfo.keySize)));
 
-        // Tag 5 = digest SET {SHA256(4)}
+        // [5] digest SET {SHA256(4)}
         ByteArrayOutputStream digestSet = new ByteArrayOutputStream();
-        digestSet.write(asn1Integer(4)); // SHA-256
+        digestSet.write(asn1Integer(KM_DIGEST_SHA256));
         byte[] digestSetBytes = digestSet.toByteArray();
         ByteArrayOutputStream digestSetWrapper = new ByteArrayOutputStream();
         digestSetWrapper.write(0x31); // SET
@@ -317,10 +397,28 @@ public class KeystoreIntegration {
         digestSetWrapper.write(digestSetBytes);
         content.write(asn1ExplicitTag(5, digestSetWrapper.toByteArray()));
 
-        // Tag 10 = ecCurve (P-256 = 1)
-        content.write(asn1ExplicitTag(10, asn1Integer(1)));
+        // [6] padding SET — only for RSA keys
+        if (keyInfo.algorithm == KM_ALGORITHM_RSA) {
+            // PSS(1) for signing
+            ByteArrayOutputStream paddingSet = new ByteArrayOutputStream();
+            paddingSet.write(asn1Integer(1)); // KM_PAD_RSA_PSS
+            byte[] paddingSetBytes = paddingSet.toByteArray();
+            ByteArrayOutputStream paddingSetWrapper = new ByteArrayOutputStream();
+            paddingSetWrapper.write(0x31); // SET
+            paddingSetWrapper.write(asn1Length(paddingSetBytes.length));
+            paddingSetWrapper.write(paddingSetBytes);
+            content.write(asn1ExplicitTag(6, paddingSetWrapper.toByteArray()));
+        }
 
-        // Tag 303 = rootOfTrust SEQUENCE
+        // [10] ecCurve INTEGER — only for EC keys
+        if (keyInfo.algorithm == KM_ALGORITHM_EC && keyInfo.ecCurve > 0) {
+            content.write(asn1ExplicitTag(10, asn1Integer(keyInfo.ecCurve)));
+        }
+
+        // [200] origin INTEGER (Generated = 0)
+        content.write(asn1ExplicitTag(200, asn1Integer(KM_ORIGIN_GENERATED)));
+
+        // [704] rootOfTrust SEQUENCE
         if (rot != null) {
             ByteArrayOutputStream rotSeq = new ByteArrayOutputStream();
             // verifiedBootKey OCTET STRING
@@ -341,11 +439,11 @@ public class KeystoreIntegration {
             content.write(asn1ExplicitTag(704, rotWrapper.toByteArray()));
         }
 
-        // Tag 705 = osVersion INTEGER
+        // [705] osVersion INTEGER
         content.write(asn1ExplicitTag(705,
                 asn1Integer(AttestationHooks.getSpoofedOsVersion())));
 
-        // Tag 706 = osPatchLevel INTEGER
+        // [706] osPatchLevel INTEGER
         content.write(asn1ExplicitTag(706,
                 asn1Integer(AttestationHooks.getSpoofedOsPatchLevel())));
 
@@ -402,9 +500,15 @@ public class KeystoreIntegration {
             if (tagNum < 128) {
                 out.write(tagNum);
             } else {
-                // Multi-byte tag
-                out.write(0x80 | (tagNum >> 7));
-                out.write(tagNum & 0x7F);
+                // Multi-byte tag encoding (base-128)
+                if (tagNum < 16384) {
+                    out.write(0x80 | (tagNum >> 7));
+                    out.write(tagNum & 0x7F);
+                } else {
+                    out.write(0x80 | (tagNum >> 14));
+                    out.write(0x80 | ((tagNum >> 7) & 0x7F));
+                    out.write(tagNum & 0x7F);
+                }
             }
         }
         out.write(asn1Length(content.length));
@@ -623,5 +727,23 @@ public class KeystoreIntegration {
         result.write(asn1Length(certContent.length));
         result.write(certContent);
         return result.toByteArray();
+    }
+
+    /**
+     * Key information for the attested key.
+     * Used to generate correct AuthorizationList tags matching actual key type.
+     */
+    private static class KeyInfo {
+        final int algorithm;    // KM_ALGORITHM_EC or KM_ALGORITHM_RSA
+        final String algorithmName;
+        final int keySize;      // bits (256 for EC P-256, 2048/4096 for RSA)
+        final int ecCurve;      // KM_EC_CURVE_P256 or -1 for RSA
+
+        KeyInfo(int algorithm, String name, int keySize, int ecCurve) {
+            this.algorithm = algorithm;
+            this.algorithmName = name;
+            this.keySize = keySize;
+            this.ecCurve = ecCurve;
+        }
     }
 }
