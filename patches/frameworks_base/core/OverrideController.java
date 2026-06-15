@@ -35,9 +35,10 @@ import java.util.Map;
  * Manages all configuration: fingerprint, keybox, per-app profiles,
  * anti-detection, auto-fallback, and profile saving/loading.
  *
- * Config stored in /sdcard/.override/ — no root or custom SELinux needed.
- * This path is accessible by any process with storage permission (system_app,
- * priv_app/GMS, platform_app), ensuring cross-process attestation hooks work.
+ * Config stored in /data/system/override/ with SELinux type override_data_file.
+ * Directory created by init.rc at boot (0755 system:system).
+ * Files made world-readable (0644) so GMS/priv_app can read for attestation hooks.
+ * This avoids FUSE/sdcard cross-process permission issues.
  *
  * Key differences from Android 13+ version:
  * - Uses Keymaster HAL (not KeyMint)
@@ -49,10 +50,11 @@ public class OverrideController {
 
     private static final String TAG = "OverrideController";
 
-    // Config stored at /sdcard/.override/ — accessible by all apps with storage permission
-    // No root required. No init.rc dependency. No custom SELinux type needed.
-    // GMS/system_server can read this path for attestation hooks.
-    private static final String CONFIG_DIR = "/sdcard/.override";
+    // Config stored at /data/system/override/ — created by init.rc at boot
+    // SELinux type: override_data_file (defined in device sepolicy)
+    // Created by init.extras.rc: mkdir /data/system/override 0755 system system
+    // Files chmod 0644 after write so all framework processes can read
+    private static final String CONFIG_DIR = "/data/system/override";
     private static final String CONFIG_FILE = CONFIG_DIR + "/config.json";
     private static final String PROFILES_DIR = CONFIG_DIR + "/profiles";
     private static final String KEYBOX_DIR = CONFIG_DIR + "/keybox";
@@ -106,7 +108,7 @@ public class OverrideController {
             synchronized (OverrideController.class) {
                 if (sInstance == null) {
                     sInstance = new OverrideController();
-                    // Auto-load config from /sdcard/.override/ for ALL processes
+                    // Auto-load config from /data/system/override/ for ALL processes
                     // This works for GMS, system_server, etc. without needing init()
                     sInstance.autoLoadConfig();
                 }
@@ -116,9 +118,9 @@ public class OverrideController {
     }
 
     /**
-     * Auto-load config from /sdcard/.override/config.json.
+     * Auto-load config from /data/system/override/config.json.
      * Called on first getInstance() in ANY process (GMS, system_server, apps).
-     * No init() needed — /sdcard is readable by all system processes.
+     * No init() needed — init.rc creates the dir, files are world-readable (0644).
      */
     private void autoLoadConfig() {
         if (mConfigLoaded) return;
@@ -178,6 +180,8 @@ public class OverrideController {
             boolean created = configDir.mkdirs();
             Log.d(TAG, "ensureDirectories: " + CONFIG_DIR + " created=" + created);
             if (!created) allOk = false;
+        } else {
+            Log.d(TAG, "ensureDirectories: " + CONFIG_DIR + " already exists");
         }
 
         File profilesDir = new File(PROFILES_DIR);
@@ -200,6 +204,23 @@ public class OverrideController {
                 + " keybox_writable=" + keyboxDir.canWrite());
 
         return allOk;
+    }
+
+    /**
+     * Make a file world-readable (0644) so GMS and other framework processes
+     * can read it even from a different UID/SELinux domain.
+     * This is critical because /data/system/override/ files are created by
+     * system_app but need to be read by priv_app (GMS), system_server, etc.
+     */
+    private static void makeWorldReadable(File file) {
+        if (file != null && file.exists()) {
+            boolean r = file.setReadable(true, false);  // world-readable
+            Log.d(TAG, "makeWorldReadable: " + file.getName() + " result=" + r);
+        }
+    }
+
+    private static void makeWorldReadable(String path) {
+        makeWorldReadable(new File(path));
     }
 
     // ========== Config Load/Save ==========
@@ -324,6 +345,7 @@ public class OverrideController {
             FileWriter writer = new FileWriter(CONFIG_FILE);
             writer.write(json.toString(2));
             writer.close();
+            makeWorldReadable(CONFIG_FILE);
 
             Log.d(TAG, "Config saved (keybox=" + mKeyboxEnabled + ")");
         } catch (Exception e) {
@@ -537,6 +559,7 @@ public class OverrideController {
             }
             fis.close();
             fos.close();
+            makeWorldReadable(dest);
 
             Log.d(TAG, "importKeybox: copied " + copied + " bytes to " + dest.getAbsolutePath()
                     + " dest_exists=" + dest.exists() + " dest_length=" + dest.length());
@@ -592,6 +615,7 @@ public class OverrideController {
             FileWriter writer = new FileWriter(dest);
             writer.write(xmlContent);
             writer.close();
+            makeWorldReadable(dest);
 
             Log.d(TAG, "importKeyboxFromContent: written OK, size=" + dest.length());
 

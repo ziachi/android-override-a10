@@ -1,4 +1,2 @@
 # File contexts for Android Override framework
-# Note: config moved to /sdcard/.override/ which uses sdcard_type (no custom label needed)
-# This entry is kept for backward compatibility only
 /data/system/override(/.*)?    u:object_r:override_data_file:s0

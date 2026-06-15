@@ -1,18 +1,22 @@
 # SELinux policy for Android Override framework (Qassa ROM / Android 10)
 #
-# Config moved to /sdcard/.override/ — no custom SELinux type needed
-# for sdcard access (handled by existing sdcard_type rules).
-#
-# This policy is kept for backward compatibility and in case
-# /data/system/override/ fallback is ever re-enabled.
+# Custom type for /data/system/override/ — allows cross-process access
+# so GMS (priv_app) can read config for attestation hooks.
+# Directory created by init.extras.rc at boot: mkdir 0755 system system
+# Files chmod 0644 (world-readable) + type_transition ensures correct label.
 
 type override_data_file, file_type, data_file_type, core_data_file_type;
+
+# type_transition: files/dirs created by system_app in override_data_file
+# dirs get the correct override_data_file label (not system_app_data_file)
+type_transition system_app override_data_file:file override_data_file;
+type_transition system_app override_data_file:dir override_data_file;
 
 # system_app (OverrideSettings, runs as android.uid.system) - full access
 allow system_app override_data_file:dir { create open read write getattr setattr search add_name remove_name };
 allow system_app override_data_file:file { create open read write getattr setattr unlink rename };
 
-# system_server - read access
+# system_server - read access (attestation hooks can run here too)
 allow system_server override_data_file:dir { open read search getattr };
 allow system_server override_data_file:file { open read getattr };
 
@@ -24,7 +28,7 @@ allow priv_app override_data_file:file { open read getattr };
 allow platform_app override_data_file:dir { open read search getattr };
 allow platform_app override_data_file:file { open read getattr };
 
-# init creates the directory at boot (legacy, may not be needed)
+# init creates the directory at boot
 allow init override_data_file:dir { create setattr };
 allow init override_data_file:file { getattr };
 
