@@ -518,7 +518,14 @@ public class OverrideController {
             boolean dirsOk = ensureDirectoriesWithLog();
             if (!dirsOk) {
                 Log.e(TAG, "importKeybox: directory creation FAILED");
-                // Continue anyway — maybe dirs exist but mkdirs returned false
+            }
+            // Double-check: verify keybox dir actually exists before writing
+            File keyboxDir = new File(KEYBOX_DIR);
+            if (!keyboxDir.exists() || !keyboxDir.canWrite()) {
+                Log.e(TAG, "importKeybox: KEYBOX_DIR not accessible — exists="
+                        + keyboxDir.exists() + " canWrite=" + keyboxDir.canWrite()
+                        + " path=" + KEYBOX_DIR);
+                return false;
             }
 
             File source = new File(sourcePath);
@@ -592,6 +599,13 @@ public class OverrideController {
 
             boolean dirsOk = ensureDirectoriesWithLog();
             Log.d(TAG, "importKeyboxFromContent: dirs=" + dirsOk);
+            // Verify keybox dir actually exists
+            File keyboxDir = new File(KEYBOX_DIR);
+            if (!keyboxDir.exists() || !keyboxDir.canWrite()) {
+                Log.e(TAG, "importKeyboxFromContent: KEYBOX_DIR not accessible — exists="
+                        + keyboxDir.exists() + " canWrite=" + keyboxDir.canWrite());
+                return false;
+            }
 
             // Validate content
             String lower = xmlContent.toLowerCase();

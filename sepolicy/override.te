@@ -2,33 +2,57 @@
 #
 # Custom type for /data/system/override/ — allows cross-process access
 # so GMS (priv_app) can read config for attestation hooks.
-# Directory created by init.extras.rc at boot: mkdir 0755 system system
-# Files chmod 0644 (world-readable) + type_transition ensures correct label.
+#
+# Critical: all processes that need /data/system/override/ MUST have
+# "search" on system_data_file:dir — otherwise they can't navigate
+# through /data/system/ to reach the override subdirectory.
 
 type override_data_file, file_type, data_file_type, core_data_file_type;
 
-# type_transition: files/dirs created by system_app in override_data_file
-# dirs get the correct override_data_file label (not system_app_data_file)
+# type_transition: files/dirs created by system_app inside override_data_file
+# dir inherit the override_data_file label (not system_app_data_file)
 type_transition system_app override_data_file:file override_data_file;
 type_transition system_app override_data_file:dir override_data_file;
 
-# system_app (OverrideSettings, runs as android.uid.system) - full access
+# Named type_transition: if system_app creates "override" dir in
+# system_data_file (fallback when init.rc didn't create it), auto-label it
+type_transition system_app system_data_file:dir override_data_file "override";
+
+# ==========================================================
+# system_app (OverrideSettings, runs as android.uid.system)
+# Full access to override dir + navigate parent system_data_file
+# ==========================================================
 allow system_app override_data_file:dir { create open read write getattr setattr search add_name remove_name };
 allow system_app override_data_file:file { create open read write getattr setattr unlink rename };
+# Navigate /data/system/ to reach /data/system/override/
+# add_name+write = fallback dir creation if init.rc didn't
+allow system_app system_data_file:dir { search getattr add_name write };
 
-# system_server - read access (attestation hooks can run here too)
+# ==========================================================
+# system_server — read access (attestation hooks in framework)
+# Already has full system_data_file access from platform policy
+# ==========================================================
 allow system_server override_data_file:dir { open read search getattr };
 allow system_server override_data_file:file { open read getattr };
 
-# priv_app (GMS) - read access for attestation hooks
+# ==========================================================
+# priv_app (GMS) — read access for attestation hooks
+# Needs search on system_data_file:dir to navigate to override/
+# ==========================================================
 allow priv_app override_data_file:dir { open read search getattr };
 allow priv_app override_data_file:file { open read getattr };
+allow priv_app system_data_file:dir { search getattr };
 
-# platform_app - read access
+# ==========================================================
+# platform_app — read access
+# ==========================================================
 allow platform_app override_data_file:dir { open read search getattr };
 allow platform_app override_data_file:file { open read getattr };
+allow platform_app system_data_file:dir { search getattr };
 
-# init creates the directory at boot
+# ==========================================================
+# init creates the directory at boot (init.extras.rc)
+# ==========================================================
 allow init override_data_file:dir { create setattr };
 allow init override_data_file:file { getattr };
 
