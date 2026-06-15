@@ -3,9 +3,9 @@
 # Custom type for /data/system/override/ — allows cross-process access
 # so GMS (priv_app) can read config for attestation hooks.
 #
-# Critical: all processes that need /data/system/override/ MUST have
-# "search" on system_data_file:dir — otherwise they can't navigate
-# through /data/system/ to reach the override subdirectory.
+# IMPORTANT: appdomain neverallow blocks write/create on system_data_file.
+# init.extras.rc MUST create /data/system/override/ at boot.
+# App domains only get "search getattr" to navigate the parent path.
 
 type override_data_file, file_type, data_file_type, core_data_file_type;
 
@@ -14,19 +14,15 @@ type override_data_file, file_type, data_file_type, core_data_file_type;
 type_transition system_app override_data_file:file override_data_file;
 type_transition system_app override_data_file:dir override_data_file;
 
-# Named type_transition: if system_app creates "override" dir in
-# system_data_file (fallback when init.rc didn't create it), auto-label it
-type_transition system_app system_data_file:dir override_data_file "override";
-
 # ==========================================================
 # system_app (OverrideSettings, runs as android.uid.system)
-# Full access to override dir + navigate parent system_data_file
+# Full access to override_data_file dir/files
 # ==========================================================
 allow system_app override_data_file:dir { create open read write getattr setattr search add_name remove_name };
 allow system_app override_data_file:file { create open read write getattr setattr unlink rename };
 # Navigate /data/system/ to reach /data/system/override/
-# add_name+write = fallback dir creation if init.rc didn't
-allow system_app system_data_file:dir { search getattr add_name write };
+# NOTE: neverallow blocks write/add_name on system_data_file for appdomain
+allow system_app system_data_file:dir { search getattr };
 
 # ==========================================================
 # system_server — read access (attestation hooks in framework)
@@ -52,6 +48,7 @@ allow platform_app system_data_file:dir { search getattr };
 
 # ==========================================================
 # init creates the directory at boot (init.extras.rc)
+# This is the ONLY way dirs get created — apps can't due to neverallow
 # ==========================================================
 allow init override_data_file:dir { create setattr };
 allow init override_data_file:file { getattr };
